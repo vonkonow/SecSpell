@@ -163,6 +163,10 @@
                 <a href="tools/tests.html" class="settings-link" target="_blank">🧪 Test Suite</a>
                 <div class="settings-item-description">Run comprehensive tests for dictionary loading, spell checking, and performance</div>
             </div>
+            <div class="settings-item">
+                <button id="runIntegrationTests" class="settings-link" style="background: none; border: none; padding: 0; cursor: pointer; text-align: left;">🧪 Integration Tests</button>
+                <div class="settings-item-description">Run integration tests simulating user interactions (requires dictionaries loaded)</div>
+            </div>
         </div>
     </div>
 
@@ -744,6 +748,75 @@
         }
         
         window.handleClearAllIgnoredWords = clearAllIgnoredWords;
+        
+        // Test integration (only loads when needed)
+        let testIntegrationLoaded = false;
+        let testIntegrationLoading = false;
+        
+        function loadTestIntegration() {
+            return new Promise((resolve, reject) => {
+                if (testIntegrationLoaded) {
+                    resolve();
+                    return;
+                }
+                if (testIntegrationLoading) {
+                    // Wait for existing load to complete
+                    const checkLoaded = setInterval(() => {
+                        if (testIntegrationLoaded) {
+                            clearInterval(checkLoaded);
+                            resolve();
+                        }
+                    }, 100);
+                    setTimeout(() => {
+                        clearInterval(checkLoaded);
+                        reject(new Error('Timeout waiting for test integration to load'));
+                    }, 5000);
+                    return;
+                }
+                
+                testIntegrationLoading = true;
+                const script = document.createElement('script');
+                script.src = 'tools/test-integration.js';
+                script.onload = () => {
+                    testIntegrationLoaded = true;
+                    testIntegrationLoading = false;
+                    // Give it a moment to execute
+                    setTimeout(() => {
+                        if (window.runIntegrationTests) {
+                            resolve();
+                        } else {
+                            reject(new Error('Test integration loaded but function not available'));
+                        }
+                    }, 100);
+                };
+                script.onerror = () => {
+                    testIntegrationLoading = false;
+                    testIntegrationLoaded = false;
+                    reject(new Error('Failed to load test integration file'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Handle integration test button
+        document.addEventListener('DOMContentLoaded', () => {
+            const testBtn = document.getElementById('runIntegrationTests');
+            if (testBtn) {
+                testBtn.addEventListener('click', async () => {
+                    try {
+                        await loadTestIntegration();
+                        if (typeof window.runIntegrationTests === 'function') {
+                            window.runIntegrationTests();
+                        } else {
+                            showToast('Test integration not available', 3000);
+                        }
+                    } catch (e) {
+                        showToast('Failed to load test integration: ' + e.message, 3000);
+                        console.error('Test integration error:', e);
+                    }
+                });
+            }
+        });
         
         function escapeHtml(text) {
             const div = document.createElement('div');

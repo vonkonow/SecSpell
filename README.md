@@ -4,7 +4,8 @@ A fast, offline spell checker that works entirely in your browser - no server or
 
 ## Features
 
-- ✅ **100% Offline** - Works without internet or server
+- ✅ **Privacy-Focused** - No data sent to servers, XSS protection, air-gapped compatible
+- ✅ **100% Offline** - Works without internet or server (AI feature is optional) 
 - ✅ **Multi-Language Support** - Auto-detects available dictionaries
 - ✅ **All Languages Mode** - Check against all loaded dictionaries simultaneously
 - ✅ **AI Chat Integration** - Copy text and open DuckDuckGo AI Chat (optional, can be disabled)
@@ -34,7 +35,8 @@ A fast, offline spell checker that works entirely in your browser - no server or
 - **Autosave text** - Automatically save/restore text (default: enabled)
 - **Ignored Words** - View and edit personal dictionary in textarea (comma or newline separated)
 - **Dictionary Converter** - Convert and add new language dictionaries
-- **Test Suite** - Run comprehensive tests
+- **Test Suite** - Run comprehensive tests (opens in new tab)
+- **Integration Tests** - Run integration tests simulating user interactions (in-app)
 
 ## Files
 
@@ -44,6 +46,7 @@ A fast, offline spell checker that works entirely in your browser - no server or
 - `tools/dictionaries-sv_SE.js` - Swedish dictionary (~3 MB)
 - `tools/converter.html` - Dictionary converter tool
 - `tools/tests.html` - Comprehensive test suite
+- `tools/test-integration.js` - Integration test runner (loads on-demand)
 - `tools/convert-dictionaries.py` - Dictionary converter script (optional, command-line alternative)
 
 ## How It Works
@@ -93,6 +96,9 @@ The application automatically detects available dictionaries by scanning for `wi
 Spell checking happens automatically after 2s idle, on Space/Enter, or manually with Escape.
 
 ## License
+
+This project is open source under MIT License.
+(Attribution is optional, but appreciated /Johan von Konow ;)
 
 - Typo.js: MIT License
 - Dictionaries: Various open-source licenses (from LibreOffice)

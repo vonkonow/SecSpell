@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecSpell</title>
     <style>
-        :root { --bg: #f5f5f5; --bg-light: #fafafa; --border: #ddd; --border-light: #e0e0e0; --text: #333; --text-muted: #666; --text-light: #555; --primary: #0066cc; --primary-hover: #0052a3; --primary-active: #003d7a; --danger: #dc3545; --danger-hover: #c82333; --success: #4caf50; --error: #ff6b6b; --error-hover: #ff5252; --hover-bg: rgba(0,0,0,0.05); }
+        :root { --bg: #f5f5f5; --bg-light: #fafafa; --container-bg: #ffffff; --border: #ddd; --border-light: #e0e0e0; --text: #333; --text-muted: #666; --text-light: #555; --primary: #0066cc; --primary-hover: #0052a3; --primary-active: #003d7a; --danger: #dc3545; --danger-hover: #c82333; --success: #4caf50; --error: #ff6b6b; --error-hover: #ff5252; --hover-bg: rgba(0,0,0,0.05); --header-bg: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e3f2fd 100%); --header-border: #90caf9; --header-text: #0d47a1; --text-area-bg: #ffffff; --suggestion-hover: #f5f5f5; --suggestion-highlight: #e3f2fd; --loading-bg: #e3f2fd; --loading-text: #1976d2; --status-warning-bg: #fff3cd; --status-warning-border: #ffc107; --status-warning-text: #856404; --status-success-bg: #e8f5e9; --status-success-text: #2e7d32; --placeholder: #adb5bd; }
+        [data-theme="dark"] { --bg: #1a1a1a; --bg-light: #2d2d2d; --container-bg: #252525; --border: #404040; --border-light: #353535; --text: #e0e0e0; --text-muted: #a0a0a0; --text-light: #b0b0b0; --primary: #4a9eff; --primary-hover: #6bb3ff; --primary-active: #3a8fef; --danger: #ff5252; --danger-hover: #ff6b6b; --success: #66bb6a; --error: #ff6b6b; --error-hover: #ff5252; --hover-bg: rgba(255,255,255,0.1); --header-bg: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1e3a5f 100%); --header-border: #3d5a7f; --header-text: #8bb4ff; --text-area-bg: #2d2d2d; --suggestion-hover: #353535; --suggestion-highlight: #3d5a7f; --loading-bg: #1e3a5f; --loading-text: #8bb4ff; --status-warning-bg: #4a3d1f; --status-warning-border: #ffa726; --status-warning-text: #ffcc80; --status-success-bg: #1b3a1f; --status-success-text: #81c784; --placeholder: #666; }
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
-        .container { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 24px; max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; flex: 1; min-height: 0; }
-        .header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 8px 12px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e3f2fd 100%); border-radius: 6px; border: 1px solid #90caf9; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(33, 150, 243, 0.12); }
+        .container { background: var(--container-bg); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 24px; max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 8px 12px; background: var(--header-bg); border-radius: 6px; border: 1px solid var(--header-border); flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .header-left { display: flex; align-items: baseline; gap: 8px; flex: 1; }
-        h1 { margin: 0; color: #0d47a1; font-size: 22px; font-weight: 600; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
+        h1 { margin: 0; color: var(--header-text); font-size: 22px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
         .subtitle { color: var(--text-muted); margin: 0; font-size: 13px; line-height: 1; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
         .language-selector { display: flex; align-items: baseline; gap: 8px; }
@@ -22,26 +23,26 @@
         .language-selector input[type="radio"] { margin: 0; cursor: pointer; flex-shrink: 0; }
         .language-selector .radio-option label { margin: 0; cursor: pointer; font-size: 13px; color: var(--text-light); user-select: none; }
         .language-selector .radio-option:hover label { color: var(--text); }
-        #text-area { width: 100%; min-height: 300px; flex: 1; padding: 12px; font-size: 15px; line-height: 1.6; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; background: white; resize: vertical; transition: border-color 0.2s; white-space: pre-wrap; }
-        #text-area:focus { outline: none; border-color: #999; }
-        #text-area:empty:before { content: attr(placeholder); color: #adb5bd; pointer-events: none; }
+        #text-area { width: 100%; min-height: 300px; flex: 1; padding: 12px; font-size: 15px; line-height: 1.6; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; background: var(--text-area-bg); color: var(--text); resize: vertical; transition: border-color 0.2s; white-space: pre-wrap; }
+        #text-area:focus { outline: none; border-color: var(--text-muted); }
+        #text-area:empty:before { content: attr(placeholder); color: var(--placeholder); pointer-events: none; }
         .spell-error { background: linear-gradient(transparent 0, transparent 85%, var(--error) 85%); cursor: pointer; border-radius: 2px; }
         .spell-error:hover { background: linear-gradient(transparent 0, transparent 85%, var(--error-hover) 85%); }
-        .spell-ignored { border-bottom: 1px dotted #999; cursor: pointer; color: var(--text-muted); }
+        .spell-ignored { border-bottom: 1px dotted var(--text-muted); cursor: pointer; color: var(--text-muted); }
         .spell-ignored:hover { background: var(--hover-bg); border-bottom-color: var(--text-muted); }
-        .suggestions-menu { position: fixed; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 4px 0; min-width: 160px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+        .suggestions-menu { position: fixed; background: var(--container-bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); padding: 4px 0; min-width: 160px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
         .suggestions-menu.show { display: block; }
         .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--text); }
-        .suggestion-item:hover { background: #f5f5f5; }
-        .suggestion-item:first-child { font-weight: 600; color: #000; border-bottom: 1px solid #eee; }
-        .suggestion-item.highlighted { background: #e3f2fd; }
+        .suggestion-item:hover { background: var(--suggestion-hover); }
+        .suggestion-item:first-child { font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border-light); }
+        .suggestion-item.highlighted { background: var(--suggestion-highlight); }
         .loading, .status { margin-top: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px; display: none; }
         .loading.active, .status.active { display: block; }
-        .loading.active { background: #e3f2fd; color: #1976d2; display: flex; align-items: center; gap: 10px; }
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(25, 118, 210, 0.3); border-top-color: #1976d2; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        .loading.active { background: var(--loading-bg); color: var(--loading-text); display: flex; align-items: center; gap: 10px; }
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(139, 180, 255, 0.3); border-top-color: var(--loading-text); border-radius: 50%; animation: spin 0.6s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .status.has-errors { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
-        .status.no-errors { background: #e8f5e9; border: 1px solid var(--success); color: #2e7d32; }
+        .status.has-errors { background: var(--status-warning-bg); border: 1px solid var(--status-warning-border); color: var(--status-warning-text); }
+        .status.no-errors { background: var(--status-success-bg); border: 1px solid var(--success); color: var(--status-success-text); }
         .status-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; position: relative; }
         .status-row .status { margin-top: 0; flex: 1; position: absolute; left: 0; }
         button { border: none; cursor: pointer; border-radius: 6px; font-size: 14px; transition: background 0.2s, color 0.2s; }
@@ -52,7 +53,7 @@
         .settings-button:hover { color: var(--text); background: var(--hover-bg); }
         .settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; display: none; }
         .settings-modal.show { display: flex; }
-        .settings-content { background: white; border-radius: 8px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .settings-content { background: var(--container-bg); border-radius: 8px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
         .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .settings-header h2 { margin: 0; font-size: 20px; color: var(--text); }
         .settings-close { background: none; font-size: 24px; color: var(--text-muted); padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
@@ -66,6 +67,8 @@
         .settings-separator { height: 1px; background: var(--border-light); margin: 20px 0; }
         .settings-button-danger { padding: 8px 16px; background: var(--danger); color: white; }
         .settings-button-danger:hover { background: var(--danger-hover); }
+        .ignored-words-textarea { width: 100%; min-height: 120px; max-height: 300px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: monospace; font-size: 13px; resize: vertical; line-height: 1.5; background: var(--text-area-bg); color: var(--text); }
+        .ignored-words-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1); }
         .toast-notification { position: fixed; top: 20px; right: 20px; background: var(--success); color: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 3000; font-size: 14px; animation: slideInRight 0.3s ease-out; }
         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
@@ -93,7 +96,7 @@
     
         <div id="text-area" contenteditable="true" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Type your text here..."></div>
         <div id="loading" class="loading" style="display: none;">Loading dictionaries...</div>
-        <div class="tips-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666; margin-top: 8px;">
+            <div class="tips-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 8px;">
             <span>💡 Press Esc to force spell check</span>
             <span id="aiWarning">⚠️ Never send sensitive text to AI service:</span>
         </div>
@@ -115,11 +118,18 @@
             </div>
             <div class="settings-item">
                 <label>
+                    <input type="checkbox" id="settingDarkMode" onchange="handleDarkModeToggle()">
+                    <span>Dark mode</span>
+                </label>
+                <div class="settings-item-description">Use dark color scheme</div>
+            </div>
+            <div class="settings-item">
+                <label>
                     <input type="checkbox" id="settingAiEnabled" onchange="handleAiToggle()">
                     <span>Show AI Chat button</span>
                 </label>
                 <div class="settings-item-description">Enable the button to copy text and open DuckDuckGo AI Chat</div>
-                <div class="settings-item-description" style="color: #dc3545; margin-top: 4px;">⚠️ Warning: AI service sends your text to external servers. Do not use for sensitive or confidential information.</div>
+                <div class="settings-item-description" style="color: var(--danger); margin-top: 4px;">⚠️ Warning: AI service sends your text to external servers. Do not use for sensitive or confidential information.</div>
             </div>
             <div class="settings-item">
                 <label>
@@ -127,11 +137,22 @@
                     <span>Autosave text</span>
                 </label>
                 <div class="settings-item-description">Automatically save your text and restore it when you return</div>
-                <div class="settings-item-description" style="color: #dc3545; margin-top: 4px;">⚠️ Warning: Saved text is stored unencrypted in your browser's localStorage. Do not use for sensitive information.</div>
+                <div class="settings-item-description" style="color: var(--danger); margin-top: 4px;">⚠️ Warning: Saved text is stored unencrypted in your browser's localStorage. Do not use for sensitive information.</div>
             </div>
             <div id="clearTextContainer" class="settings-item" style="display: none;">
                 <div id="lastSavedTime" class="settings-item-description" style="margin-bottom: 8px; font-weight: 500;"></div>
                 <button class="settings-button-danger" onclick="handleClearSavedText()">Clear saved text</button>
+            </div>
+            <div class="settings-separator"></div>
+            <div class="settings-item">
+                <div style="font-weight: 500; margin-bottom: 8px;">Ignored Words (Personal Dictionary)</div>
+                <div class="settings-item-description" style="margin-bottom: 8px;">Words you've chosen to ignore. Enter one word per line or comma-separated. Changes save automatically.</div>
+                <textarea id="ignoredWordsTextarea" class="ignored-words-textarea" placeholder="Enter words to ignore, one per line or comma-separated&#10;Example:&#10;customword&#10;technicalterm&#10;brandname"></textarea>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="settings-button" onclick="handleSaveIgnoredWords()" style="padding: 6px 12px; font-size: 13px;">Save Changes</button>
+                    <button class="settings-button-danger" onclick="handleClearAllIgnoredWords()" style="padding: 6px 12px; font-size: 13px;" id="clearAllIgnoredBtn">Clear All</button>
+                </div>
+                <div id="ignoredWordsCount" class="settings-item-description" style="margin-top: 4px; font-style: italic;"></div>
             </div>
             <div class="settings-separator"></div>
             <div class="settings-item">
@@ -177,7 +198,8 @@
             AI_ENABLED: 'spellcheck-ai-enabled',
             AUTOSAVE: 'spellcheck-autosave',
             AUTOSAVED_TEXT: 'spellcheck-autosaved-text',
-            LAST_SAVED: 'spellcheck-last-saved'
+            LAST_SAVED: 'spellcheck-last-saved',
+            DARK_MODE: 'spellcheck-dark-mode'
         };
         
         // ====== CONFIGURATION ======
@@ -192,40 +214,160 @@
             AUTOSAVE_DELAY: 2000  // Save text after 2 seconds of no typing
         };
         
+        // ====== STORAGE UTILITY ======
+        const Storage = {
+            get(key, defaultValue = null) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value !== null ? value : defaultValue;
+                } catch (e) {
+                    console.error(`Failed to read ${key}:`, e);
+                    return defaultValue;
+                }
+            },
+            
+            set(key, value) {
+                try {
+                    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+                    return true;
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        showToast('Storage full. Please clear some data.', 4000);
+                    } else {
+                        console.error(`Failed to save ${key}:`, e);
+                    }
+                    return false;
+                }
+            },
+            
+            remove(key) {
+                try {
+                    localStorage.removeItem(key);
+                    return true;
+                } catch (e) {
+                    console.error(`Failed to remove ${key}:`, e);
+                    return false;
+                }
+            },
+            
+            getJSON(key, defaultValue = null) {
+                try {
+                    const value = this.get(key);
+                    return value ? JSON.parse(value) : defaultValue;
+                } catch (e) {
+                    console.error(`Failed to parse ${key}:`, e);
+                    return defaultValue;
+                }
+            },
+            
+            setJSON(key, value) {
+                return this.set(key, JSON.stringify(value));
+            }
+        };
+        
+        // ====== TIMEOUT MANAGER ======
+        const TimeoutManager = {
+            timeouts: new Map(),
+            
+            set(name, callback, delay) {
+                this.clear(name);
+                this.timeouts.set(name, setTimeout(callback, delay));
+            },
+            
+            clear(name) {
+                const timeout = this.timeouts.get(name);
+                if (timeout) {
+                    clearTimeout(timeout);
+                    this.timeouts.delete(name);
+                }
+            },
+            
+            clearAll() {
+                this.timeouts.forEach(timeout => clearTimeout(timeout));
+                this.timeouts.clear();
+            }
+        };
+        
+        // ====== DOM UTILITIES ======
+        const DOMUtils = {
+            createElement(tag, className = null, textContent = null, attributes = {}) {
+                const el = document.createElement(tag);
+                if (className) el.className = className;
+                if (textContent) el.textContent = textContent;
+                Object.entries(attributes).forEach(([key, value]) => {
+                    el.setAttribute(key, value);
+                });
+                return el;
+            },
+            
+            createMenuItem(text, onClick = null, attributes = {}) {
+                const item = this.createElement('div', 'suggestion-item', text, attributes);
+                if (onClick) item.addEventListener('click', onClick);
+                return item;
+            }
+        };
+        
+        // ====== TEXT UTILITIES ======
+        const TextUtils = {
+            get() {
+                return getPlainText(DOM.textArea);
+            },
+            
+            set(value) {
+                DOM.textArea.textContent = value;
+            },
+            
+            isEmpty() {
+                const text = this.get();
+                return !text || text.trim() === '' || text === PLACEHOLDER_TEXT;
+            },
+            
+            isPlaceholder() {
+                return this.get() === PLACEHOLDER_TEXT;
+            },
+            
+            forceRecheck() {
+                lastTextContent = '';
+                performSpellCheck();
+            }
+        };
+        
         // ====== STATE MANAGEMENT ======
         const availableLanguages = detectAvailableLanguages();
         const dictionaries = new Map();
         let languageMode = 'all', undoStack = [], redoStack = [], isUndoRedoAction = false;
         let suggestionCache = new Map(), isDictionaryLoading = false;
-        let ignoredWords = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.IGNORED) || '[]'));
+        let ignoredWords = new Set(Storage.getJSON(STORAGE_KEYS.IGNORED, []));
         let selectedSuggestionIndex = -1, lastTextContent = '', isLanguageSwitching = false;
-        let spellCheckTimeout = null, idleCheckTimeout = null, savedCursorPosition = null, enterKeyPressed = false;
-        let preCacheTimeout = null, isPreCaching = false;
-        let autosaveTimeout = null;
+        let savedCursorPosition = null, enterKeyPressed = false;
+        let isPreCaching = false;
         
         // ====== SETTINGS MANAGEMENT ======
         const settings = {
             get(key, def = true) {
-                try {
-                    const val = localStorage.getItem(`spellcheck-${key}`);
-                    return val === null ? def : val === 'true';
-                } catch (e) {
-                    console.error('Failed to read setting:', e);
-                    return def;
-                }
+                const val = Storage.get(`spellcheck-${key}`);
+                return val === null ? def : val === 'true';
             },
+            
             set(key, value) {
-                try {
-                    localStorage.setItem(`spellcheck-${key}`, value.toString());
-                } catch (e) {
-                    if (e.name === 'QuotaExceededError') {
-                        showToast('Storage full. Please clear some data.', 4000);
-                    } else {
-                        console.error('Failed to save setting:', e);
-                        showToast('Failed to save setting.', 2000);
-                    }
-                }
+                Storage.set(`spellcheck-${key}`, value.toString());
             },
+            
+            getBoolean(key, defaultValue = true) {
+                return this.get(key, defaultValue);
+            },
+            
+            getString(key, defaultValue = '') {
+                return Storage.get(`spellcheck-${key}`, defaultValue);
+            },
+            
+            batchUpdate(updates) {
+                Object.entries(updates).forEach(([key, value]) => {
+                    this.set(key, value);
+                });
+                this.apply();
+            },
+            
             apply() {
                 const aiEnabled = this.get('ai-enabled');
                 DOM.aiButton.style.display = aiEnabled ? '' : 'none';
@@ -234,18 +376,15 @@
                 DOM.settingAutosaveCheckbox.checked = this.get('autosave');
                 this.updateClearButton();
             },
+            
             updateClearButton() {
-                try {
-                    const hasText = localStorage.getItem(STORAGE_KEYS.AUTOSAVED_TEXT);
-                    const lastSaved = localStorage.getItem(STORAGE_KEYS.LAST_SAVED);
-                    DOM.clearTextContainer.style.display = (this.get('autosave') && hasText) ? 'block' : 'none';
-                    if (lastSaved && DOM.lastSavedTime) {
-                        const date = new Date(parseInt(lastSaved));
-                        DOM.lastSavedTime.textContent = `Last saved: ${date.toLocaleString()}`;
-                        DOM.lastSavedTime.style.display = lastSaved ? 'block' : 'none';
-                    }
-                } catch (e) {
-                    console.error('Failed to update clear button:', e);
+                const hasText = Storage.get(STORAGE_KEYS.AUTOSAVED_TEXT);
+                const lastSaved = Storage.get(STORAGE_KEYS.LAST_SAVED);
+                DOM.clearTextContainer.style.display = (this.get('autosave') && hasText) ? 'block' : 'none';
+                if (lastSaved && DOM.lastSavedTime) {
+                    const date = new Date(parseInt(lastSaved));
+                    DOM.lastSavedTime.textContent = `Last saved: ${date.toLocaleString()}`;
+                    DOM.lastSavedTime.style.display = lastSaved ? 'block' : 'none';
                 }
             }
         };
@@ -254,6 +393,7 @@
             const modal = document.getElementById('settingsModal');
             if (modal) {
                 settings.updateClearButton();
+                updateIgnoredWordsList();
                 modal.classList.add('show');
             }
         }
@@ -267,86 +407,95 @@
             if (event.target.id === 'settingsModal') closeSettings();
         }
         
-        function handleAiToggle() {
-            const checkbox = document.getElementById('settingAiEnabled');
-            settings.set('ai-enabled', checkbox?.checked ?? true);
-            settings.apply();
-        }
-        
-        function handleAutosaveToggle() {
-            const checkbox = document.getElementById('settingAutosave');
-            const enabled = checkbox?.checked ?? true;
-            settings.set('autosave', enabled);
-            settings.apply();
-            if (enabled) scheduleAutosave(0);
-            else {
-                try {
-                    localStorage.removeItem(STORAGE_KEYS.AUTOSAVED_TEXT);
-                    localStorage.removeItem(STORAGE_KEYS.LAST_SAVED);
-                } catch (e) {
-                    console.error('Failed to clear autosaved text:', e);
-                }
-                settings.updateClearButton();
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
             }
         }
         
+        function getSystemDarkModePreference() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        
+        function initDarkMode() {
+            const saved = Storage.get(STORAGE_KEYS.DARK_MODE);
+            const isDark = saved !== null ? saved === 'true' : getSystemDarkModePreference();
+            
+            applyTheme(isDark);
+            if (DOM.settingDarkModeCheckbox) {
+                DOM.settingDarkModeCheckbox.checked = isDark;
+            }
+        }
+        
+        function createSettingHandler(settingKey, callback = null) {
+            return function() {
+                const checkbox = document.getElementById(`setting${settingKey}`);
+                const value = checkbox?.checked ?? true;
+                
+                if (settingKey === 'DarkMode') {
+                    Storage.set(STORAGE_KEYS.DARK_MODE, value.toString());
+                    applyTheme(value);
+                } else {
+                    const key = settingKey.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+                    settings.set(key, value);
+                    if (callback) callback(value);
+                    else settings.apply();
+                }
+            };
+        }
+        
+        window.handleDarkModeToggle = createSettingHandler('DarkMode');
+        window.handleAiToggle = createSettingHandler('AiEnabled');
+        window.handleAutosaveToggle = createSettingHandler('Autosave', (enabled) => {
+            if (enabled) {
+                scheduleAutosave(0);
+            } else {
+                Storage.remove(STORAGE_KEYS.AUTOSAVED_TEXT);
+                Storage.remove(STORAGE_KEYS.LAST_SAVED);
+                settings.updateClearButton();
+            }
+            settings.apply();
+        });
+        
         function handleClearSavedText() {
             if (confirm('Are you sure you want to clear the saved text? This cannot be undone.')) {
-                try {
-                    localStorage.removeItem(STORAGE_KEYS.AUTOSAVED_TEXT);
-                    localStorage.removeItem(STORAGE_KEYS.LAST_SAVED);
-                    settings.updateClearButton();
-                    showToast('Saved text cleared', 2000);
-                } catch (e) {
-                    console.error('Failed to clear saved text:', e);
-                    showToast('Failed to clear saved text', 2000);
-                }
+                Storage.remove(STORAGE_KEYS.AUTOSAVED_TEXT);
+                Storage.remove(STORAGE_KEYS.LAST_SAVED);
+                settings.updateClearButton();
+                showToast('Saved text cleared', 2000);
             }
         }
         
         function scheduleAutosave(delay = CONFIG.AUTOSAVE_DELAY) {
             if (!settings.get('autosave')) return;
-            clearTimeout(autosaveTimeout);
-            autosaveTimeout = setTimeout(() => {
-                const text = getPlainText(textArea);
-                try {
-                    if (text && text !== PLACEHOLDER_TEXT) {
-                        localStorage.setItem(STORAGE_KEYS.AUTOSAVED_TEXT, text);
-                        localStorage.setItem(STORAGE_KEYS.LAST_SAVED, Date.now().toString());
-                    } else {
-                        localStorage.removeItem(STORAGE_KEYS.AUTOSAVED_TEXT);
-                        localStorage.removeItem(STORAGE_KEYS.LAST_SAVED);
-                    }
-                    settings.updateClearButton();
-                } catch (e) {
-                    if (e.name === 'QuotaExceededError') {
-                        showToast('Storage full. Autosave disabled. Please clear data.', 4000);
-                        settings.set('autosave', false);
-                        settings.apply();
-                    } else {
-                        console.error('Autosave failed:', e);
-                    }
+            TimeoutManager.set('autosave', () => {
+                const text = TextUtils.get();
+                if (text && text !== PLACEHOLDER_TEXT) {
+                    Storage.set(STORAGE_KEYS.AUTOSAVED_TEXT, text);
+                    Storage.set(STORAGE_KEYS.LAST_SAVED, Date.now().toString());
+                } else {
+                    Storage.remove(STORAGE_KEYS.AUTOSAVED_TEXT);
+                    Storage.remove(STORAGE_KEYS.LAST_SAVED);
                 }
+                settings.updateClearButton();
             }, delay);
         }
         
         function restoreSavedText() {
             if (!settings.get('autosave')) return;
-            try {
-                const savedText = localStorage.getItem(STORAGE_KEYS.AUTOSAVED_TEXT);
-                if (!savedText?.trim() || !textArea) return;
-                const currentText = getPlainText(textArea);
-                if (!currentText || currentText === PLACEHOLDER_TEXT || !currentText.trim()) {
-                    textArea.textContent = savedText;
-                    lastTextContent = '';
-                    undoStack = [savedText];
-                    redoStack = [];
-                    setTimeout(() => {
-                        if (textArea !== document.activeElement) performSpellCheck();
-                    }, 100);
-                }
-            } catch (e) {
-                console.error('Failed to restore saved text:', e);
+            const savedText = Storage.get(STORAGE_KEYS.AUTOSAVED_TEXT);
+            if (!savedText?.trim() || !DOM.textArea) return;
+            const currentText = TextUtils.get();
+            if (TextUtils.isEmpty()) {
+                TextUtils.set(savedText);
+                lastTextContent = '';
+                undoStack = [savedText];
+                redoStack = [];
+                TimeoutManager.set('restoreCheck', () => {
+                    if (DOM.textArea !== document.activeElement) performSpellCheck();
+                }, 100);
             }
         }
         
@@ -357,25 +506,48 @@
             statusDiv: null,
             aiButton: null,
             aiWarning: null,
+            settingDarkModeCheckbox: null,
             settingAiCheckbox: null,
             settingAutosaveCheckbox: null,
             clearTextContainer: null,
             lastSavedTime: null,
             loadingDiv: null,
-            radioGroup: null
+            radioGroup: null,
+            ignoredWordsTextarea: null,
+            clearAllIgnoredBtn: null,
+            ignoredWordsCount: null
         };
-        let textArea, menu, statusDiv; // Legacy references for compatibility
-        
         function scheduleSpellCheck(delay = 0) {
-            clearTimeout(spellCheckTimeout);
-            spellCheckTimeout = setTimeout(() => {
+            TimeoutManager.set('spellCheck', performSpellCheck, delay);
+        }
+        
+        function performSpellCheckWithCursorRestore() {
+            const wasFocused = DOM.textArea === document.activeElement;
+            isLanguageSwitching = true;
+            
+            if (wasFocused) {
+                savedCursorPosition = saveCursorPosition();
+                DOM.textArea.blur();
+                TimeoutManager.set('spellCheckDelayed', () => {
+                    performSpellCheck();
+                    TimeoutManager.set('restoreCursor', () => {
+                        if (savedCursorPosition !== null) {
+                            DOM.textArea.focus();
+                            restoreCursorPosition(savedCursorPosition);
+                            savedCursorPosition = null;
+                        }
+                        isLanguageSwitching = false;
+                    }, 10);
+                }, 20);
+            } else {
                 performSpellCheck();
-            }, delay);
+                isLanguageSwitching = false;
+            }
         }
         
         function triggerSpellCheckWithCursor() {
             savedCursorPosition = saveCursorPosition();
-            textArea.blur(); // This triggers spell check and cursor restore
+            DOM.textArea.blur(); // This triggers spell check and cursor restore
         }
         
         // ====== UTILITIES ======
@@ -389,6 +561,13 @@
         
         function loadDictionary(locale) {
             return new Promise((resolve) => {
+                // Validate locale format to prevent injection (alphanumeric and underscores only)
+                if (!locale || !/^[a-zA-Z0-9_]+$/.test(locale)) {
+                    console.error(`Invalid locale format: ${locale}`);
+                    resolve(null);
+                    return;
+                }
+                
                 const dictVarName = `dictionary_${locale}`;
                 if (!window[dictVarName]) {
                     console.error(`Dictionary ${locale} not found`);
@@ -499,33 +678,72 @@
             if (add) ignoredWords.add(cleaned);
             else if (ignoredWords.has(cleaned)) ignoredWords.delete(cleaned);
             else return;
-            try {
-                localStorage.setItem(STORAGE_KEYS.IGNORED, JSON.stringify([...ignoredWords]));
-            } catch (e) {
-                if (e.name === 'QuotaExceededError') {
-                    showToast('Storage full. Could not save ignored word.', 3000);
-                } else {
-                    console.error('Failed to save ignored word:', e);
-                }
+            
+            if (!Storage.setJSON(STORAGE_KEYS.IGNORED, [...ignoredWords])) {
+                showToast('Storage full. Could not save ignored word.', 3000);
                 return;
             }
-            lastTextContent = ''; // Force re-check to update highlights
-            performSpellCheck();
+            TextUtils.forceRecheck();
+            updateIgnoredWordsList();
         }
+        
+        function updateIgnoredWordsList() {
+            if (!DOM.ignoredWordsTextarea) return;
+            
+            const words = Array.from(ignoredWords).sort();
+            DOM.ignoredWordsTextarea.value = words.join('\n');
+            
+            // Update count
+            if (DOM.ignoredWordsCount) {
+                if (words.length === 0) {
+                    DOM.ignoredWordsCount.textContent = 'No ignored words yet. Right-click a misspelled word to ignore it.';
+                } else {
+                    DOM.ignoredWordsCount.textContent = `${words.length} word${words.length !== 1 ? 's' : ''} ignored`;
+                }
+            }
+            
+            if (DOM.clearAllIgnoredBtn) {
+                DOM.clearAllIgnoredBtn.style.display = words.length > 0 ? 'inline-block' : 'none';
+            }
+        }
+        
+        function parseIgnoredWordsText(text) {
+            // Split by commas, newlines, or semicolons, then clean and filter
+            return text
+                .split(/[,\n;]+/)
+                .map(word => cleanWord(word.trim()))
+                .filter(word => word.length > 0);
+        }
+        
+        function handleSaveIgnoredWords() {
+            if (!DOM.ignoredWordsTextarea) return;
+            
+            const text = DOM.ignoredWordsTextarea.value;
+            const newWords = parseIgnoredWordsText(text);
+            ignoredWords = new Set(newWords);
+            
+            if (!Storage.setJSON(STORAGE_KEYS.IGNORED, [...ignoredWords])) {
+                showToast('Storage full. Could not save ignored words.', 3000);
+                return;
+            }
+            
+            showToast(`Saved ${ignoredWords.size} ignored word${ignoredWords.size !== 1 ? 's' : ''}`, 2000);
+            TextUtils.forceRecheck();
+            updateIgnoredWordsList();
+        }
+        
+        window.handleSaveIgnoredWords = handleSaveIgnoredWords;
         
         function clearAllIgnoredWords() {
             if (!confirm('Clear all ignored words from your personal dictionary?')) return;
             ignoredWords.clear();
-            try {
-                localStorage.removeItem(STORAGE_KEYS.IGNORED);
-                showToast('All ignored words cleared', 2000);
-                lastTextContent = '';
-                performSpellCheck();
-            } catch (e) {
-                console.error('Failed to clear ignored words:', e);
-                showToast('Failed to clear ignored words', 2000);
-            }
+            Storage.remove(STORAGE_KEYS.IGNORED);
+            showToast('All ignored words cleared', 2000);
+            TextUtils.forceRecheck();
+            updateIgnoredWordsList();
         }
+        
+        window.handleClearAllIgnoredWords = clearAllIgnoredWords;
         
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -564,11 +782,11 @@
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) return null;
             const range = selection.getRangeAt(0);
-            if (!textArea.contains(range.commonAncestorContainer)) return null;
+            if (!DOM.textArea.contains(range.commonAncestorContainer)) return null;
             
             // Count characters before cursor
             const preRange = range.cloneRange();
-            preRange.selectNodeContents(textArea);
+            preRange.selectNodeContents(DOM.textArea);
             preRange.setEnd(range.endContainer, range.endOffset);
             
             return preRange.toString().length;
@@ -576,7 +794,7 @@
         
         function restoreCursorPosition(position) {
             if (position === null || position === undefined) return;
-            const text = getPlainText(textArea);
+            const text = TextUtils.get();
             
             // Clamp position to valid range
             position = Math.min(position, text.length);
@@ -587,7 +805,7 @@
             let charCount = 0;
             let found = false;
             
-            const walker = document.createTreeWalker(textArea, NodeFilter.SHOW_TEXT, null);
+            const walker = document.createTreeWalker(DOM.textArea, NodeFilter.SHOW_TEXT, null);
             
             let node;
             while ((node = walker.nextNode())) {
@@ -604,7 +822,7 @@
             
             if (!found) {
                 // Position at end if not found
-                range.selectNodeContents(textArea);
+                range.selectNodeContents(DOM.textArea);
                 range.collapse(false);
             }
             
@@ -613,15 +831,13 @@
         }
         
         function performSpellCheck() {
-            if (textArea === document.activeElement) return;
+            if (DOM.textArea === document.activeElement) return;
             
-            const text = getPlainText(textArea);
-            
-            // Skip if text hasn't changed
+            const text = TextUtils.get();
             if (text === lastTextContent) return;
             lastTextContent = text;
             
-            if (!text.trim() && textArea.childNodes.length === 0) {
+            if (!text.trim() && DOM.textArea.childNodes.length === 0) {
                 updateStatus();
                 return;
             }
@@ -630,15 +846,17 @@
             if (requiredDicts.some(locale => !dictionaries.has(locale))) return;
             
             // Perform spell check (cursor is NOT in text area, so safe!)
+            // Note: innerHTML usage here is safe - all user content is escaped via highlightErrors() → escapeHtml()
+            // Only safe HTML tags (<span> with data-word attributes) are injected, never raw user content
             const highlighted = highlightErrors(text);
             const htmlWithBreaks = highlighted.replace(/\n/g, '<br>');
             
             // Only update if HTML changed
-            const currentHtml = textArea.innerHTML.replace(/\s+/g, ' ').trim();
+            const currentHtml = DOM.textArea.innerHTML.replace(/\s+/g, ' ').trim();
             const newHtml = htmlWithBreaks.replace(/\s+/g, ' ').trim();
             
             if (currentHtml !== newHtml) {
-                textArea.innerHTML = htmlWithBreaks;
+                DOM.textArea.innerHTML = htmlWithBreaks;
             }
             
             updateStatus();
@@ -646,11 +864,7 @@
         }
         
         function preCacheSuggestions() {
-            // Cancel any ongoing pre-caching
-            if (preCacheTimeout) {
-                clearTimeout(preCacheTimeout);
-                preCacheTimeout = null;
-            }
+            TimeoutManager.clear('preCache');
             if (isPreCaching) return;
             
             // Get first N misspelled words
@@ -664,7 +878,7 @@
                 .filter(word => {
                     const cleaned = cleanWord(word);
                     const cacheKey = `${languageMode}:${cleaned}:8`;
-                    return !suggestionCache.has(cacheKey); // Only cache if not already cached
+                    return !suggestionCache.has(cacheKey);
                 });
             
             if (wordsToCache.length === 0) return;
@@ -679,115 +893,106 @@
                 }
                 
                 const word = wordsToCache[index];
-                if (word) {
-                    // Pre-compute suggestions (silently, don't block)
-                    getSuggestions(word, 8);
-                }
+                if (word) getSuggestions(word, 8);
                 
                 index++;
                 if (index < wordsToCache.length) {
-                    preCacheTimeout = setTimeout(cacheNext, CONFIG.PRE_CACHE_DELAY);
+                    TimeoutManager.set('preCache', cacheNext, CONFIG.PRE_CACHE_DELAY);
                 } else {
                     isPreCaching = false;
                 }
             };
             
-            // Start caching after a short delay to avoid blocking spell check
-            preCacheTimeout = setTimeout(cacheNext, 200);
+            TimeoutManager.set('preCache', cacheNext, 200);
+        }
+        
+        function positionMenu(menu, rect) {
+            menu.style.top = (rect.bottom + 2) + 'px';
+            menu.style.left = rect.left + 'px';
+            
+            TimeoutManager.set('menuPosition', () => {
+                const menuRect = menu.getBoundingClientRect();
+                if (menuRect.right > window.innerWidth) {
+                    menu.style.left = (window.innerWidth - menuRect.width - 10) + 'px';
+                }
+                if (menuRect.bottom > window.innerHeight) {
+                    menu.style.top = (rect.top - menuRect.height - 2) + 'px';
+                }
+            }, 0);
         }
         
         let currentSuggestionWord = null; // Store word for event delegation
         
         function showSuggestions(word, element, isIgnoredWord = false) {
             const rect = element.getBoundingClientRect();
-            
-            // Position menu
-            menu.style.top = (rect.bottom + 2) + 'px'; 
-            menu.style.left = rect.left + 'px';
-            menu.classList.add('show');
-            selectedSuggestionIndex = -1;
-            currentSuggestionWord = word; // Store for event delegation
-            
             const cleaned = cleanWord(word);
             const isIgnored = ignoredWords.has(cleaned);
-            
-            // Get suggestions only if not ignored
             const suggestions = isIgnored ? [] : getSuggestions(word, 8);
             
-            // Build menu HTML
-            const ignoreButton = `<div class="suggestion-item" data-action="ignore" style="border-top: 1px solid #eee; margin-top: 4px; padding-top: 8px;">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>`;
+            DOM.menu.innerHTML = '';
+            selectedSuggestionIndex = -1;
+            currentSuggestionWord = word;
             
-            if (suggestions.length === 0) {
-                menu.innerHTML = `<div class="suggestion-item" data-action="ignore">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>${!isIgnored ? '<div class="suggestion-item">No suggestions found</div>' : ''}`;
-            } else {
-                menu.innerHTML = suggestions.map(s => `<div class="suggestion-item" data-replace="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('') + ignoreButton;
+            // Add suggestion items
+            suggestions.forEach(s => {
+                DOM.menu.appendChild(DOMUtils.createMenuItem(s, null, { 'data-replace': s }));
+            });
+            
+            // Add "No suggestions found" if needed
+            if (suggestions.length === 0 && !isIgnored) {
+                DOM.menu.appendChild(DOMUtils.createElement('div', 'suggestion-item', 'No suggestions found'));
             }
             
-            // Adjust position if off-screen
-            setTimeout(() => {
-                const menuRect = menu.getBoundingClientRect();
-                if (menuRect.right > window.innerWidth) {
-                    menu.style.left = (window.innerWidth - menuRect.width - 10) + 'px';
-                }
-                if (menuRect.bottom > window.innerHeight) {
-                    menu.style.top = (rect.top - menuRect.height - 5) + 'px';
-                }
-            }, 0);
+            // Add ignore button
+            const ignoreButton = DOMUtils.createElement('div', 'suggestion-item', 
+                isIgnored ? 'Remove from ignore list' : 'Ignore word', 
+                { 'data-action': 'ignore' });
+            ignoreButton.style.borderTop = '1px solid var(--border-light)';
+            ignoreButton.style.marginTop = '4px';
+            ignoreButton.style.paddingTop = '8px';
+            DOM.menu.appendChild(ignoreButton);
+            
+            positionMenu(DOM.menu, rect);
+            DOM.menu.classList.add('show');
         }
         
         function hideSuggestions() {
-            menu.classList.remove('show');
+            DOM.menu.classList.remove('show');
             selectedSuggestionIndex = -1;
         }
         
         function saveState(force = false) {
             if (isUndoRedoAction) return;
-            const currentText = getPlainText(textArea);
+            const currentText = TextUtils.get();
             if (!force && undoStack.length > 0 && undoStack[undoStack.length - 1] === currentText) return;
-            undoStack.push(currentText); redoStack = [];
+            undoStack.push(currentText); 
+            redoStack = [];
             if (undoStack.length > CONFIG.MAX_UNDO_HISTORY) undoStack.shift();
         }
+        
         function performUndoRedo(sourceStack, targetStack) {
             if (sourceStack.length === 0) return;
-            targetStack.push(getPlainText(textArea));
+            targetStack.push(TextUtils.get());
             isUndoRedoAction = true;
-            textArea.textContent = sourceStack.pop();
-            lastTextContent = ''; // Force re-check
-            isLanguageSwitching = true; // Prevent blur handler from interfering
-            const wasFocused = textArea === document.activeElement;
-            if (wasFocused) {
-                savedCursorPosition = saveCursorPosition();
-                textArea.blur();
-                setTimeout(() => {
-                    performSpellCheck();
-                    setTimeout(() => {
-                        if (savedCursorPosition !== null) {
-                            textArea.focus();
-                            restoreCursorPosition(savedCursorPosition);
-                            savedCursorPosition = null;
-                        }
-                        isLanguageSwitching = false;
-                        isUndoRedoAction = false;
-                    }, 10);
-                }, 10);
-            } else {
-                performSpellCheck();
-                isLanguageSwitching = false;
-                isUndoRedoAction = false;
-            }
+            TextUtils.set(sourceStack.pop());
+            TextUtils.forceRecheck();
+            performSpellCheckWithCursorRestore();
+            isUndoRedoAction = false;
         }
         
         function undo() { performUndoRedo(undoStack, redoStack); }
         function redo() { performUndoRedo(redoStack, undoStack); }
+        
         function replaceWord(oldWord, newWord) {
             saveState();
-            textArea.textContent = getPlainText(textArea).replace(new RegExp(`\\b${oldWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), newWord);
+            TextUtils.set(TextUtils.get().replace(new RegExp(`\\b${oldWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), newWord));
             performSpellCheck();
         }
+        
         function updateStatus() {
             const errors = document.querySelectorAll('.spell-error');
-            statusDiv.className = 'status active' + (errors.length > 0 ? ' has-errors' : ' no-errors');
-            statusDiv.textContent = errors.length > 0 ? `Found ${errors.length} error${errors.length === 1 ? '' : 's'}. Hover over highlighted words for suggestions.` : 'No spelling errors detected.';
+            DOM.statusDiv.className = 'status active' + (errors.length > 0 ? ' has-errors' : ' no-errors');
+            DOM.statusDiv.textContent = errors.length > 0 ? `Found ${errors.length} error${errors.length === 1 ? '' : 's'}. Hover over highlighted words for suggestions.` : 'No spelling errors detected.';
         }
         
         // ====== CLIPBOARD UTILITIES ======
@@ -820,14 +1025,12 @@
         }
         
         function showToast(message, duration = 3000) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-notification';
-            toast.textContent = message;
+            const toast = DOMUtils.createElement('div', 'toast-notification', message);
             document.body.appendChild(toast);
             
-            setTimeout(() => {
+            TimeoutManager.set('toastHide', () => {
                 toast.classList.add('hide');
-                setTimeout(() => {
+                TimeoutManager.set('toastRemove', () => {
                     if (document.body.contains(toast)) {
                         document.body.removeChild(toast);
                     }
@@ -835,7 +1038,7 @@
             }, duration);
         }
         function openInDuckDuckGoAI() {
-            const text = getPlainText(textArea).trim();
+            const text = TextUtils.get().trim();
             if (!text) {
                 showToast('Please enter some text first.', 2000);
                 return;
@@ -852,19 +1055,44 @@
                         showToast('⚠ Could not copy to clipboard. Please copy manually.', 4000);
                     });
         }
+        
         function init() {
             // Cache DOM elements
-            textArea = DOM.textArea = document.getElementById('text-area');
-            menu = DOM.menu = document.getElementById('suggestions-menu');
-            statusDiv = DOM.statusDiv = document.getElementById('status');
+            DOM.textArea = document.getElementById('text-area');
+            DOM.menu = document.getElementById('suggestions-menu');
+            DOM.statusDiv = document.getElementById('status');
             DOM.radioGroup = document.getElementById('languageRadioGroup');
             DOM.loadingDiv = document.getElementById('loading');
             DOM.aiButton = document.getElementById('aiButton');
             DOM.aiWarning = document.getElementById('aiWarning');
+            DOM.settingDarkModeCheckbox = document.getElementById('settingDarkMode');
             DOM.settingAiCheckbox = document.getElementById('settingAiEnabled');
             DOM.settingAutosaveCheckbox = document.getElementById('settingAutosave');
+            
+            // Initialize dark mode
+            initDarkMode();
+            
+            // Listen for system theme changes (only if user hasn't set preference)
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (Storage.get(STORAGE_KEYS.DARK_MODE) === null) {
+                        applyTheme(e.matches);
+                        if (DOM.settingDarkModeCheckbox) {
+                            DOM.settingDarkModeCheckbox.checked = e.matches;
+                        }
+                    }
+                });
+            }
             DOM.clearTextContainer = document.getElementById('clearTextContainer');
             DOM.lastSavedTime = document.getElementById('lastSavedTime');
+            DOM.ignoredWordsTextarea = document.getElementById('ignoredWordsTextarea');
+            DOM.clearAllIgnoredBtn = document.getElementById('clearAllIgnoredBtn');
+            DOM.ignoredWordsCount = document.getElementById('ignoredWordsCount');
+            
+            // Auto-save ignored words on blur (when user finishes editing)
+            if (DOM.ignoredWordsTextarea) {
+                DOM.ignoredWordsTextarea.addEventListener('blur', handleSaveIgnoredWords);
+            }
             
             // Add loading spinner
             if (DOM.loadingDiv && !DOM.loadingDiv.querySelector('.spinner')) {
@@ -890,26 +1118,20 @@
             if (availableLanguages.length > 0 && DOM.loadingDiv) {
                 DOM.loadingDiv.classList.add('active');
                 DOM.loadingDiv.style.display = '';
-                setTimeout(() => {
+                TimeoutManager.set('initLoad', () => {
                     loadAllDictionaries().then(() => {
                         if (DOM.loadingDiv) {
                             DOM.loadingDiv.classList.remove('active');
                             DOM.loadingDiv.style.display = 'none';
-                            // Reset any error styling and restore spinner HTML
                             DOM.loadingDiv.innerHTML = '<div class="spinner"></div> Loading dictionaries...';
                             DOM.loadingDiv.style.background = '';
                             DOM.loadingDiv.style.color = '';
                         }
-                        // Restore saved text if autosave is enabled (before setting default placeholder)
                         restoreSavedText();
-                        const text = getPlainText(textArea);
-                        // Only set default text if no saved text was restored and textarea is empty
-                        if (!text || text.trim() === '' || text === PLACEHOLDER_TEXT) {
-                            if (!localStorage.getItem(STORAGE_KEYS.AUTOSAVED_TEXT)) {
-                                textArea.textContent = PLACEHOLDER_TEXT;
-                            }
+                        if (TextUtils.isEmpty() && !Storage.get(STORAGE_KEYS.AUTOSAVED_TEXT)) {
+                            TextUtils.set(PLACEHOLDER_TEXT);
                         }
-                        if (text && text !== PLACEHOLDER_TEXT) {
+                        if (!TextUtils.isEmpty() && !TextUtils.isPlaceholder()) {
                             performSpellCheck();
                         }
                     }).catch(e => {
@@ -924,69 +1146,58 @@
                     });
                 }, 50);
             } else {
-                // No dictionaries to load, just restore text
                 restoreSavedText();
-                const text = getPlainText(textArea);
-                if (!text || text.trim() === '' || text === PLACEHOLDER_TEXT) {
-                    if (!localStorage.getItem(STORAGE_KEYS.AUTOSAVED_TEXT)) {
-                        textArea.textContent = PLACEHOLDER_TEXT;
-                    }
+                if (TextUtils.isEmpty() && !Storage.get(STORAGE_KEYS.AUTOSAVED_TEXT)) {
+                    TextUtils.set(PLACEHOLDER_TEXT);
                 }
             }
             // Save state on input (keystrokes, typing)
-            textArea.addEventListener('input', () => {
+            DOM.textArea.addEventListener('input', () => {
                 if (!isUndoRedoAction) saveState();
-                lastTextContent = ''; // Mark text as changed
-                scheduleAutosave(); // Schedule autosave
+                lastTextContent = '';
+                scheduleAutosave();
                 
                 // If Enter was just pressed, check immediately (newline already in DOM)
                 if (enterKeyPressed) {
                     enterKeyPressed = false;
-                    clearTimeout(idleCheckTimeout);
-                    setTimeout(() => {
-                        triggerSpellCheckWithCursor();
-                    }, 100); // Slightly longer delay to ensure DOM is stable
+                    TimeoutManager.clear('idleCheck');
+                    TimeoutManager.set('enterCheck', triggerSpellCheckWithCursor, 100);
                     return;
                 }
                 
                 // Schedule spell check after idle period
-                clearTimeout(idleCheckTimeout);
-                idleCheckTimeout = setTimeout(() => {
-                    triggerSpellCheckWithCursor();
-                }, CONFIG.SPELL_CHECK_IDLE_DELAY);
+                TimeoutManager.set('idleCheck', triggerSpellCheckWithCursor, CONFIG.SPELL_CHECK_IDLE_DELAY);
             });
             
             // Handle paste - save state BEFORE paste (so we can undo back to pre-paste state)
-            textArea.addEventListener('paste', (e) => {
-                // Save current state before paste happens (always, even if it's the same as last)
-                if (!isUndoRedoAction) saveState(true); // Force save to capture pre-paste state
-                // Also save after paste completes to capture the new state
-                setTimeout(() => {
+            DOM.textArea.addEventListener('paste', (e) => {
+                if (!isUndoRedoAction) saveState(true);
+                TimeoutManager.set('pasteSave', () => {
                     if (!isUndoRedoAction) saveState();
                     lastTextContent = '';
-                    scheduleAutosave(500); // Save after paste with shorter delay
+                    scheduleAutosave(500);
                 }, 0);
             });
             
             // Handle cut - save state before cut (so we can undo back to pre-cut state)
-            textArea.addEventListener('cut', () => {
+            DOM.textArea.addEventListener('cut', () => {
                 if (!isUndoRedoAction) saveState();
-                setTimeout(() => {
+                TimeoutManager.set('cutSave', () => {
                     lastTextContent = '';
-                    scheduleAutosave(500); // Save after cut with shorter delay
+                    scheduleAutosave(500);
                 }, 0);
             });
             
             // Spell check when user clicks away (leaves the text area)
-            textArea.addEventListener('blur', () => {
+            DOM.textArea.addEventListener('blur', () => {
                 if (!isLanguageSwitching) {
                     scheduleSpellCheck(0);
-                    scheduleAutosave(100); // Save immediately when leaving textarea
+                    scheduleAutosave(100);
                     
                     // Restore cursor if we have a saved position
                     if (savedCursorPosition !== null) {
-                        setTimeout(() => {
-                            textArea.focus();
+                        TimeoutManager.set('restoreCursorBlur', () => {
+                            DOM.textArea.focus();
                             restoreCursorPosition(savedCursorPosition);
                             savedCursorPosition = null;
                         }, 10);
@@ -994,53 +1205,26 @@
                 }
             });
             
-            textArea.addEventListener('keydown', (e) => {
-                // Handle large deletions (Ctrl+Delete, Ctrl+Backspace, Ctrl+A + Delete)
-                if ((e.key === 'Delete' || e.key === 'Backspace') && (e.ctrlKey || e.metaKey)) {
-                    // Save state before deletion
-                    if (!isUndoRedoAction) saveState();
-                }
-                
-                // Handle Ctrl+A (select all) - will be followed by delete/cut
-                if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
-                    // Save state when selecting all (in case user deletes/cuts next)
-                    // This is a bit aggressive but ensures we capture the state
-                    if (!isUndoRedoAction) {
-                        // Use setTimeout to save after selection happens
-                        setTimeout(() => saveState(), 10);
-                    }
-                }
-                // Check on space
-                if (e.key === ' ') {
-                    clearTimeout(idleCheckTimeout); // Cancel idle timer since we're checking now
-                    setTimeout(() => {
-                        triggerSpellCheckWithCursor();
-                    }, 50);
-                }
-                
-                // Mark Enter for checking in input event (after newline is created)
-                if (e.key === 'Enter') {
-                    enterKeyPressed = true;
-                }
-                
-                // Manual trigger: Press Escape to spell check without leaving field
-                if (e.key === 'Escape') {
+            // ====== KEYBOARD HANDLERS ======
+            const KeyboardHandlers = {
+                handleEscape(e) {
                     const settingsModal = document.getElementById('settingsModal');
-                    if (settingsModal && settingsModal.classList.contains('show')) {
-                        // Close settings if open
+                    if (settingsModal?.classList.contains('show')) {
                         closeSettings();
                         e.preventDefault();
-                        return;
+                        return true;
                     }
                     e.preventDefault();
-                    clearTimeout(idleCheckTimeout); // Cancel idle timer
-                    lastTextContent = ''; // Force re-check
+                    TimeoutManager.clear('idleCheck');
+                    lastTextContent = '';
                     triggerSpellCheckWithCursor();
-                    return;
-                }
+                    return true;
+                },
                 
-                if (menu.classList.contains('show')) {
-                    const items = menu.querySelectorAll('.suggestion-item');
+                handleSuggestionNavigation(e) {
+                    if (!DOM.menu.classList.contains('show')) return false;
+                    
+                    const items = DOM.menu.querySelectorAll('.suggestion-item');
                     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                         e.preventDefault();
                         selectedSuggestionIndex = e.key === 'ArrowDown' 
@@ -1048,83 +1232,108 @@
                             : (selectedSuggestionIndex <= 0 ? items.length - 1 : selectedSuggestionIndex - 1);
                         items.forEach((item, i) => item.classList.toggle('highlighted', i === selectedSuggestionIndex));
                         items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                        return true;
                     } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
                         e.preventDefault();
                         items[selectedSuggestionIndex].click();
+                        return true;
                     } else if (e.key === 'Escape') {
-                    e.preventDefault();
+                        e.preventDefault();
                         hideSuggestions();
+                        return true;
                     }
-                    return;
+                    return false;
+                },
+                
+                handleShortcuts(e) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                        e.preventDefault();
+                        undo();
+                        return true;
+                    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                        e.preventDefault();
+                        redo();
+                        return true;
+                    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
+                        e.preventDefault();
+                        clearAllIgnoredWords();
+                        return true;
+                    }
+                    return false;
                 }
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-                else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-                else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') { e.preventDefault(); clearAllIgnoredWords(); }
+            };
+            
+            DOM.textArea.addEventListener('keydown', (e) => {
+                // Handle large deletions
+                if ((e.key === 'Delete' || e.key === 'Backspace') && (e.ctrlKey || e.metaKey)) {
+                    if (!isUndoRedoAction) saveState();
+                }
+                
+                // Handle Ctrl+A (select all)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
+                    if (!isUndoRedoAction) {
+                        TimeoutManager.set('selectAllSave', saveState, 10);
+                    }
+                }
+                
+                // Check on space
+                if (e.key === ' ') {
+                    TimeoutManager.clear('idleCheck');
+                    TimeoutManager.set('spaceCheck', triggerSpellCheckWithCursor, 50);
+                }
+                
+                // Mark Enter for checking in input event
+                if (e.key === 'Enter') {
+                    enterKeyPressed = true;
+                }
+                
+                // Handle Escape
+                if (e.key === 'Escape' && KeyboardHandlers.handleEscape(e)) return;
+                
+                // Handle suggestion menu navigation
+                if (KeyboardHandlers.handleSuggestionNavigation(e)) return;
+                
+                // Handle keyboard shortcuts
+                KeyboardHandlers.handleShortcuts(e);
             });
             langRadios.forEach(radio => {
                 radio.addEventListener('change', function() {
                     if (!this.checked) return;
                     
                     suggestionCache.clear();
-                    // Cancel any ongoing pre-caching
-                    if (preCacheTimeout) {
-                        clearTimeout(preCacheTimeout);
-                        preCacheTimeout = null;
-                    }
+                    TimeoutManager.clear('preCache');
                     isPreCaching = false;
                     languageMode = this.value;
-                    lastTextContent = ''; // Force re-check with new language
+                    lastTextContent = '';
                     
                     const requiredDicts = getRequiredDictionaries();
-                    
                     if (requiredDicts.some(locale => !dictionaries.has(locale))) {
                         if (DOM.loadingDiv) DOM.loadingDiv.classList.add('active');
                     }
                     
                     loadDictionaries().then(() => {
                         if (DOM.loadingDiv) DOM.loadingDiv.classList.remove('active');
-                        const wasFocused = textArea === document.activeElement;
-                        isLanguageSwitching = true; // Prevent blur handler from interfering
-                        if (wasFocused) {
-                            // If focused, blur and wait for spell check before restoring focus
-                            savedCursorPosition = saveCursorPosition();
-                            textArea.blur();
-                            // Schedule spell check with a small delay to ensure blur completed
-                            setTimeout(() => {
-                                performSpellCheck();
-                                // Restore focus after spell check completes
-                                setTimeout(() => {
-                                    if (savedCursorPosition !== null) {
-                                        textArea.focus();
-                                        restoreCursorPosition(savedCursorPosition);
-                                        savedCursorPosition = null;
-                                    }
-                                    isLanguageSwitching = false;
-                                }, 10);
-                            }, 20);
-                        } else {
-                            // Not focused, can check directly
-                            performSpellCheck();
-                            isLanguageSwitching = false;
-                        }
+                        performSpellCheckWithCursorRestore();
                     });
                 });
             });
+            
             // ====== SUGGESTION MENU LOGIC ======
-            let menuHideTimer = null;
-            const cancelMenuHide = () => clearTimeout(menuHideTimer);
+            const cancelMenuHide = () => TimeoutManager.clear('menuHide');
             const scheduleMenuHide = () => {
                 cancelMenuHide();
-                menuHideTimer = setTimeout(() => {
-                    if (!menu.matches(':hover') && !document.querySelector('.spell-error:hover') && !document.querySelector('.spell-ignored:hover')) hideSuggestions();
+                TimeoutManager.set('menuHide', () => {
+                    if (!DOM.menu.matches(':hover') && !document.querySelector('.spell-error:hover') && !document.querySelector('.spell-ignored:hover')) {
+                        hideSuggestions();
+                    }
                 }, CONFIG.SUGGESTION_HIDE_DELAY);
             };
             
             // Show suggestions on hover over misspelled or ignored word
-            textArea.addEventListener('mouseover', (e) => {
+            DOM.textArea.addEventListener('mouseover', (e) => {
                 if (e.target.classList.contains('spell-error') || e.target.classList.contains('spell-ignored')) {
                     cancelMenuHide();
-                    setTimeout(() => {
+                    TimeoutManager.set('hoverDelay', () => {
                         const word = e.target.getAttribute('data-word');
                         if (word) showSuggestions(word, e.target, e.target.classList.contains('spell-ignored'));
                     }, CONFIG.SUGGESTION_HOVER_DELAY);
@@ -1132,14 +1341,14 @@
             });
             
             // Hide when leaving word (if not moving to menu)
-            textArea.addEventListener('mouseout', (e) => {
+            DOM.textArea.addEventListener('mouseout', (e) => {
                 if (e.target.classList.contains('spell-error') || e.target.classList.contains('spell-ignored')) {
                     scheduleMenuHide();
                 }
             });
             
             // Event delegation for suggestion menu clicks
-            menu.addEventListener('click', (e) => {
+            DOM.menu.addEventListener('click', (e) => {
                 const item = e.target.closest('.suggestion-item');
                 if (!item) return;
                 e.stopPropagation();
@@ -1159,19 +1368,19 @@
             });
             
             // Keep menu visible when hovering over it
-            menu.addEventListener('mouseenter', cancelMenuHide);
-            menu.addEventListener('mouseleave', scheduleMenuHide);
+            DOM.menu.addEventListener('mouseenter', cancelMenuHide);
+            DOM.menu.addEventListener('mouseleave', scheduleMenuHide);
             
             // Hide immediately when clicking outside
             document.addEventListener('click', (e) => {
-                if (menu.classList.contains('show') && !menu.contains(e.target) && !e.target.classList.contains('spell-error') && !e.target.classList.contains('spell-ignored')) {
+                if (DOM.menu.classList.contains('show') && !DOM.menu.contains(e.target) && !e.target.classList.contains('spell-error') && !e.target.classList.contains('spell-ignored')) {
                     cancelMenuHide();
                     hideSuggestions();
                 }
             });
             
             // Right-click context menu for managing ignored words
-            textArea.addEventListener('contextmenu', (e) => {
+            DOM.textArea.addEventListener('contextmenu', (e) => {
                 const target = e.target;
                 
                 // Check if clicking on a spell-error or spell-ignored span
@@ -1184,12 +1393,16 @@
                     const isIgnored = ignoredWords.has(cleaned);
                     
                     // Show menu with ignore/remove option
-                    menu.innerHTML = `<div class="suggestion-item" data-action="ignore">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>`;
-                    menu.style.top = e.pageY + 'px';
-                    menu.style.left = e.pageX + 'px';
-                    menu.classList.add('show');
+                    DOM.menu.innerHTML = '';
+                    const ignoreItem = DOMUtils.createElement('div', 'suggestion-item', 
+                        isIgnored ? 'Remove from ignore list' : 'Ignore word', 
+                        { 'data-action': 'ignore' });
+                    DOM.menu.appendChild(ignoreItem);
+                    DOM.menu.style.top = e.pageY + 'px';
+                    DOM.menu.style.left = e.pageX + 'px';
+                    DOM.menu.classList.add('show');
                     
-                    menu.querySelectorAll('.suggestion-item').forEach(item => {
+                    DOM.menu.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', () => {
                             toggleIgnoreList(word, !isIgnored);
                             hideSuggestions();
@@ -1197,9 +1410,9 @@
                     });
                     
                     // Hide on click outside
-                    setTimeout(() => {
+                    TimeoutManager.set('contextMenuHide', () => {
                         const hideOnClick = (clickE) => {
-                            if (!menu.contains(clickE.target)) {
+                            if (!DOM.menu.contains(clickE.target)) {
                                 hideSuggestions();
                                 document.removeEventListener('click', hideOnClick);
                             }
@@ -1208,17 +1421,20 @@
                     }, 0);
                 }
             });
-            ['contenteditable', 'spellcheck', 'autocomplete', 'autocorrect', 'autocapitalize'].forEach(attr => textArea.setAttribute(attr, attr === 'contenteditable' ? 'true' : 'false'));
+            
+            ['contenteditable', 'spellcheck', 'autocomplete', 'autocorrect', 'autocapitalize'].forEach(attr => 
+                DOM.textArea.setAttribute(attr, attr === 'contenteditable' ? 'true' : 'false'));
+            
             // Don't set default text here - it's handled after dictionary loading in case we restore saved text
-            textArea.addEventListener('focus', function() {
+            DOM.textArea.addEventListener('focus', function() {
                 if (this.textContent === PLACEHOLDER_TEXT) {
-                    this.textContent = '';
+                    TextUtils.set('');
                     undoStack = [];
                     redoStack = [];
-                    // Save the empty state as the first undo point
                     undoStack.push('');
                 }
             });
+            
             // Initialize undo stack - will be reset if saved text is restored
             undoStack.push('');
         }

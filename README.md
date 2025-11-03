@@ -8,8 +8,10 @@ A fast, offline spell checker that works entirely in your browser - no server or
 - ✅ **Multi-Language Support** - Auto-detects available dictionaries
 - ✅ **All Languages Mode** - Check against all loaded dictionaries simultaneously
 - ✅ **AI Chat Integration** - Copy text and open DuckDuckGo AI Chat (optional, can be disabled)
-- ✅ **Settings Panel** - Configure AI button visibility, autosave, and access tools
+- ✅ **Settings Panel** - Configure dark mode, AI button visibility, autosave, and access tools
+- ✅ **Dark Mode** - System preference detection with manual toggle
 - ✅ **Autosave & Restore** - Automatically saves and restores your text
+- ✅ **Ignored Words Management** - View and edit personal dictionary in settings (textarea interface)
 - ✅ **Dynamic Language Addition** - Easily add new languages via dictionary converter
 - ✅ **Suggestions** - Hover over misspelled words for corrections
 - ✅ **Keyboard Navigation** - Arrow keys + Enter to navigate suggestions
@@ -27,8 +29,10 @@ A fast, offline spell checker that works entirely in your browser - no server or
 6. Use 🤖 "Copy & Open AI Chat" button to send text to DuckDuckGo AI (if enabled)
 
 **Settings (⚙️ icon):**
+- **Dark mode** - Toggle dark color scheme (respects system preference)
 - **Show AI Chat button** - Toggle AI button visibility (default: enabled)
 - **Autosave text** - Automatically save/restore text (default: enabled)
+- **Ignored Words** - View and edit personal dictionary in textarea (comma or newline separated)
 - **Dictionary Converter** - Convert and add new language dictionaries
 - **Test Suite** - Run comprehensive tests
 
@@ -70,7 +74,8 @@ The application automatically detects available dictionaries by scanning for `wi
 - No network requests or cloud services (unless AI Chat button is used)
 - Works completely offline with no tracking or analytics
 - Browser spell check disabled to prevent data leaks
-- XSS protection via HTML escaping
+- XSS protection via HTML escaping and DOM manipulation
+- Locale validation to prevent injection attacks
 
 **Important:**
 - ⚠️ **AI Chat** - Sends text to external servers (DuckDuckGo). Can be disabled in settings.
@@ -82,6 +87,7 @@ The application automatically detects available dictionaries by scanning for `wi
 - **Arrow Up/Down** - Navigate suggestions
 - **Enter** - Select highlighted suggestion
 - **Ctrl+Z/Y** - Undo/Redo
+- **Ctrl+Shift+I** - Clear all ignored words
 - **Space/Enter** - Instant spell check after word/line
 
 Spell checking happens automatically after 2s idle, on Space/Enter, or manually with Escape.

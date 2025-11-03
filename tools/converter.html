@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dictionary Converter - Offline Spell Checker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 24px; max-width: 700px; width: 100%; margin: 0 auto; }
+        h1 { margin: 0 0 8px 0; color: #333; font-size: 24px; }
+        .subtitle { color: #666; margin: 0 0 24px 0; font-size: 14px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #0066cc; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .modal-content { padding: 0; }
+        .converter-upload-area { border: 2px dashed #ddd; border-radius: 8px; padding: 30px; text-align: center; margin-bottom: 20px; background: #fafafa; cursor: pointer; }
+        .converter-upload-area.drag-over { border-color: #4caf50; background: #f0f8f0; }
+        .converter-upload-area input { display: none; }
+        .converter-upload-area label { display: inline-block; padding: 10px 20px; background: #4caf50; color: white; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .converter-file-list { margin: 20px 0; }
+        .converter-file-pair { display: flex; gap: 12px; margin-bottom: 10px; padding: 12px; background: #f9f9f9; border-radius: 6px; align-items: center; }
+        .converter-file-pair.complete { background: #e8f5e9; }
+        .converter-file-info { flex: 1; font-size: 14px; }
+        .converter-file-name { font-weight: 500; color: #333; }
+        .converter-file-size { font-size: 12px; color: #666; }
+        .converter-locale-input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 120px; }
+        .converter-btn { padding: 10px 24px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 15px; }
+        .converter-btn:hover { background: #1976D2; }
+        .converter-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .converter-download-area { margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee; }
+        .converter-download-btn { padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; margin-bottom: 8px; }
+        .converter-status { margin-top: 16px; padding: 12px; border-radius: 6px; font-size: 14px; }
+        .converter-status.success { background: #d4edda; color: #155724; }
+        .converter-status.error { background: #f8d7da; color: #721c24; }
+        .converter-info-box { background: #e3f2fd; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
+        .converter-info-box strong { display: block; margin-bottom: 6px; }
+        .converter-download-links { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .converter-download-links a { color: #1976d2; text-decoration: none; font-size: 13px; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← Back to Spell Checker</a>
+        <h1>Dictionary Converter</h1>
+        <p class="subtitle">Convert .aff/.dic files to JavaScript format</p>
+        
+        <div class="modal-content">
+            <div class="converter-info-box">
+                <strong>About .aff and .dic Files</strong>
+                <div style="margin: 8px 0; font-size: 13px; line-height: 1.8;">
+                    <div>.aff (Affix File): Contains language rules, prefixes, suffixes, and morphological patterns, defining word modifications (e.g., plural, tense).</div>
+                    <div>.dic (Dictionary File): Lists all root words in the dictionary.</div>
+                </div>
+                <strong style="display: block; margin-top: 12px;">Dictionary Sources:</strong>
+                <a href="https://github.com/wooorm/dictionaries" target="_blank">wooorm/dictionaries</a> - 50+ languages. Pattern: <code>raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/{lang}/index.aff</code>
+                <div class="converter-download-links">
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/en/index.aff" download>🇬🇧 en.aff</a>
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/en/index.dic" download>🇬🇧 en.dic</a>
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/sv/index.aff" download>🇸🇪 sv.aff</a>
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/sv/index.dic" download>🇸🇪 sv.dic</a>
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/de/index.aff" download>🇩🇪 de.aff</a>
+                    <a href="https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/de/index.dic" download>🇩🇪 de.dic</a>
+                </div>
+            </div>
+
+            <div class="converter-upload-area" id="converterUploadArea" onclick="document.getElementById('converterFileInput').click()">
+                <input type="file" id="converterFileInput" multiple accept=".aff,.dic">
+                <label for="converterFileInput">Select or drag & drop .aff/.dic files</label>
+            </div>
+
+            <div class="converter-file-list" id="converterFileList"></div>
+
+            <div class="text-center">
+                <button class="converter-btn" id="converterBtn" disabled>Convert All</button>
+            </div>
+
+            <div class="converter-download-area" id="converterDownloadArea" style="display: none;">
+                <strong style="display: block; margin-bottom: 12px;">Generated Files:</strong>
+                <div id="converterDownloadList"></div>
+            </div>
+
+            <div id="converterStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        const converterFilePairs = new Map();
+        const converterGeneratedFiles = new Map();
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+            return btoa(binary);
+        }
+        
+        function converterProcessFiles(files) {
+            const affFiles = Array.from(files).filter(f => f.name.endsWith('.aff'));
+            const dicFiles = Array.from(files).filter(f => f.name.endsWith('.dic'));
+            affFiles.forEach(affFile => {
+                const baseName = affFile.name.replace('.aff', '');
+                const dicFile = dicFiles.find(f => f.name.replace('.dic', '') === baseName);
+                if (dicFile) {
+                    const pairId = baseName;
+                    if (!converterFilePairs.has(pairId)) {
+                        converterFilePairs.set(pairId, { aff: null, dic: null, locale: baseName.replace(/[-_]/g, '_') });
+                    }
+                    converterFilePairs.get(pairId).aff = affFile;
+                    converterFilePairs.get(pairId).dic = dicFile;
+                }
+            });
+            converterUpdateFileList();
+        }
+        
+        function converterUpdateFileList() {
+            const list = document.getElementById('converterFileList');
+            list.innerHTML = '';
+            converterFilePairs.forEach((pair, id) => {
+                const div = document.createElement('div');
+                div.className = 'converter-file-pair' + (pair.aff && pair.dic ? ' complete' : '');
+                const affSize = pair.aff ? (pair.aff.size / 1024).toFixed(1) + ' KB' : 'missing';
+                const dicSize = pair.dic ? (pair.dic.size / 1024).toFixed(1) + ' KB' : 'missing';
+                div.innerHTML = `
+                    <div class="converter-file-info">
+                        <div class="converter-file-name">${escapeHtml(id)}</div>
+                        <div class="converter-file-size">.aff: ${affSize} | .dic: ${dicSize}</div>
+                    </div>
+                    <input type="text" class="converter-locale-input" placeholder="locale" value="${escapeHtml(pair.locale)}" 
+                        onchange="converterFilePairs.get(${JSON.stringify(id)}).locale = this.value.replace(/[-_]/g, '_')">
+                `;
+                list.appendChild(div);
+            });
+            document.getElementById('converterBtn').disabled = !Array.from(converterFilePairs.values()).every(p => p.aff && p.dic) || converterFilePairs.size === 0;
+        }
+        
+        async function converterConvertAll() {
+            const btn = document.getElementById('converterBtn');
+            btn.disabled = true;
+            btn.textContent = 'Converting...';
+            converterGeneratedFiles.clear();
+            const statusDiv = document.getElementById('converterStatus');
+            statusDiv.className = 'converter-status';
+            statusDiv.textContent = '';
+            try {
+                for (const [id, pair] of converterFilePairs) {
+                    if (!pair.aff || !pair.dic || !pair.locale) continue;
+                    const affBuffer = await pair.aff.arrayBuffer();
+                    const dicBuffer = await pair.dic.arrayBuffer();
+                    const affBase64 = arrayBufferToBase64(affBuffer);
+                    const dicBase64 = arrayBufferToBase64(dicBuffer);
+                    const locale = pair.locale;
+                    const jsVarName = `dictionary_${locale}`;
+                    const fileName = `dictionaries-${locale}.js`;
+                    const jsContent = `// Dictionary data for ${locale}\nwindow.${jsVarName} = {\n    aff: "${affBase64}",\n    dic: "${dicBase64}"\n};`;
+                    converterGeneratedFiles.set(fileName, { content: jsContent, locale });
+                }
+                converterDisplayDownloads();
+                statusDiv.className = 'converter-status success';
+                statusDiv.textContent = `Converted ${converterGeneratedFiles.size} dictionary file(s)!`;
+            } catch (error) {
+                statusDiv.className = 'converter-status error';
+                statusDiv.textContent = 'Error: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Convert All';
+            }
+        }
+        
+        function converterDisplayDownloads() {
+            const area = document.getElementById('converterDownloadArea');
+            const list = document.getElementById('converterDownloadList');
+            area.style.display = 'block';
+            list.innerHTML = '';
+            converterGeneratedFiles.forEach((file, fileName) => {
+                const btn = document.createElement('button');
+                btn.className = 'converter-download-btn';
+                btn.textContent = `Download ${fileName}`;
+                btn.onclick = () => {
+                    const blob = new Blob([file.content], { type: 'application/javascript' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                list.appendChild(btn);
+            });
+        }
+        
+        // Initialize
+        const converterUploadArea = document.getElementById('converterUploadArea');
+        const converterFileInput = document.getElementById('converterFileInput');
+        converterFileInput.addEventListener('change', (e) => converterProcessFiles(e.target.files));
+        converterUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); converterUploadArea.classList.add('drag-over'); });
+        converterUploadArea.addEventListener('dragleave', () => converterUploadArea.classList.remove('drag-over'));
+        converterUploadArea.addEventListener('drop', (e) => { e.preventDefault(); converterUploadArea.classList.remove('drag-over'); converterProcessFiles(e.dataTransfer.files); });
+        document.getElementById('converterBtn').addEventListener('click', converterConvertAll);
+    </script>
+</body>
+</html>
+

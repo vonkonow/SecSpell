@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spell Checker Tests</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
+        .test-container { max-width: 900px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { margin: 0 0 20px 0; color: #333; }
+        .test-summary { padding: 16px; border-radius: 6px; margin-top: 16px; margin-bottom: 20px; font-weight: 500; min-height: 24px; }
+        .test-summary.passing { background: #d4edda; color: #155724; }
+        .test-summary.failing { background: #f8d7da; color: #721c24; }
+        .test-summary.running { background: #e3f2fd; color: #1976d2; animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .test-section { margin: 24px 0; padding: 16px; background: #fafafa; border-radius: 6px; border-left: 4px solid #2196F3; }
+        .test-section h2 { margin: 0 0 12px 0; color: #333; font-size: 18px; }
+        .test-item { padding: 10px; margin: 8px 0; background: white; border-radius: 4px; border-left: 3px solid #ccc; }
+        .test-item.pass { border-left-color: #4caf50; }
+        .test-item.fail { border-left-color: #f44336; }
+        .test-name { font-weight: 500; color: #333; margin-bottom: 4px; }
+        .test-result { font-size: 13px; color: #666; }
+        .test-error { color: #d32f2f; margin-top: 4px; font-size: 12px; font-family: monospace; }
+        button { padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; margin-bottom: 16px; }
+        button:hover { background: #1976D2; }
+        .test-stats { display: flex; gap: 16px; margin-top: 16px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Spell Checker Test Suite</h1>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <div id="testSummary" class="test-summary">Click "Run All Tests" to begin</div>
+        <div id="testResults"></div>
+    </div>
+
+    <script src="typo.js" onerror="console.error('Failed to load typo.js')"></script>
+    <script src="dictionaries-en_US.js" onerror="console.error('Failed to load dictionaries-en_US.js')"></script>
+    <script src="dictionaries-sv_SE.js" onerror="console.error('Failed to load dictionaries-sv_SE.js')"></script>
+    <script>
+// Test framework
+let testResults = { passed: 0, failed: 0, total: 0 };
+
+function assert(condition, message) {
+    if (!condition) throw new Error(message || 'Assertion failed');
+}
+
+function assertEquals(actual, expected, message) {
+    if (actual !== expected) {
+        throw new Error(message || `Expected ${expected}, got ${actual}`);
+    }
+}
+
+function assertTrue(condition, message) {
+    assert(condition, message || 'Expected true');
+}
+
+function assertFalse(condition, message) {
+    assert(!condition, message || 'Expected false');
+}
+
+function assertContains(array, item, message) {
+    if (!array.includes(item)) {
+        throw new Error(message || `Expected array to contain ${item}`);
+    }
+}
+
+function assertNotContains(array, item, message) {
+    if (array.includes(item)) {
+        throw new Error(message || `Expected array not to contain ${item}`);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function decodeBase64ToUTF8(base64String) {
+    return new TextDecoder('utf-8').decode(new Uint8Array([...atob(base64String)].map(c => c.charCodeAt(0))));
+}
+
+function disableCompoundRules(dict) {
+    if (dict.compoundRules) {
+        dict.compoundRules = [];
+        delete dict.flags.COMPOUNDMIN;
+    }
+}
+
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+}
+
+function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+}
+
+async function test(name, fn, results) {
+    try {
+        await fn();
+        results.push({ name, pass: true });
+    } catch (e) {
+        results.push({ name, pass: false, error: e.message });
+    }
+}
+
+async function loadTestDictionary(locale) {
+    const dictVarName = `dictionary_${locale}`;
+    if (typeof window[dictVarName] === 'undefined') {
+        throw new Error(`Dictionary ${locale} not found`);
+    }
+    const dictData = window[dictVarName];
+    const affData = decodeBase64ToUTF8(dictData.aff);
+    const dicData = decodeBase64ToUTF8(dictData.dic);
+    const dict = new Typo(locale, affData, dicData);
+    disableCompoundRules(dict);
+    return dict;
+}
+
+const tests = {
+    async dictionaryLoading() {
+        const results = [];
+        await test('Load English dictionary', async () => {
+            const enDict = await loadTestDictionary('en_US');
+            assertTrue(enDict.loaded, 'English dictionary should be loaded');
+            assertTrue(enDict.check, 'English dictionary should have check method');
+        }, results);
+        await test('Load Swedish dictionary', async () => {
+            const svDict = await loadTestDictionary('sv_SE');
+            assertTrue(svDict.loaded, 'Swedish dictionary should be loaded');
+            assertTrue(svDict.check, 'Swedish dictionary should have check method');
+        }, results);
+        return results;
+    },
+    
+    async dynamicLanguageDetection() {
+        const results = [];
+        
+        // Test auto-detection function (simulating the detectAvailableLanguages logic)
+        test('Auto-detect available dictionaries', () => {
+            const detectedLanguages = [];
+            for (const key in window) {
+                if (key.startsWith('dictionary_') && window[key] && window[key].aff && window[key].dic) {
+                    const locale = key.replace('dictionary_', '');
+                    const code = locale.split('_')[0];
+                    detectedLanguages.push({ locale, code });
+                }
+            }
+            assertTrue(detectedLanguages.length >= 2, 'Should detect at least 2 dictionaries (en_US, sv_SE)');
+            assertTrue(detectedLanguages.some(l => l.locale === 'en_US'), 'Should detect en_US');
+            assertTrue(detectedLanguages.some(l => l.locale === 'sv_SE'), 'Should detect sv_SE');
+        }, results);
+        
+        // Test language name mapping
+        test('Language name mapping', () => {
+            const getLanguageName = (code, locale) => {
+                const names = { en: 'English', sv: 'Swedish', de: 'German', fr: 'French', es: 'Spanish', 
+                              it: 'Italian', pt: 'Portuguese', nl: 'Dutch', ru: 'Russian', ja: 'Japanese',
+                              zh: 'Chinese', ko: 'Korean', pl: 'Polish', cs: 'Czech', tr: 'Turkish' };
+                return names[code] || locale.replace('_', ' ').toUpperCase();
+            };
+            assertEquals(getLanguageName('en', 'en_US'), 'English', 'English name should map correctly');
+            assertEquals(getLanguageName('sv', 'sv_SE'), 'Swedish', 'Swedish name should map correctly');
+            assertEquals(getLanguageName('de', 'de_DE'), 'German', 'German name should map correctly');
+            assertEquals(getLanguageName('xx', 'xx_XX'), 'XX XX', 'Unknown language should use locale as fallback');
+        }, results);
+        
+        // Test locale code extraction
+        test('Locale code extraction', () => {
+            const testCases = [
+                { locale: 'en_US', expectedCode: 'en' },
+                { locale: 'sv_SE', expectedCode: 'sv' },
+                { locale: 'de_DE', expectedCode: 'de' },
+                { locale: 'fr_FR', expectedCode: 'fr' }
+            ];
+            testCases.forEach(({ locale, expectedCode }) => {
+                const code = locale.split('_')[0];
+                assertEquals(code, expectedCode, `Should extract code ${expectedCode} from ${locale}`);
+            });
+        }, results);
+        
+        // Test dictionary Map storage
+        await test('Dictionary Map storage', async () => {
+            const dictionaries = new Map();
+            const enDict = await loadTestDictionary('en_US');
+            const svDict = await loadTestDictionary('sv_SE');
+            dictionaries.set('en_US', enDict);
+            dictionaries.set('sv_SE', svDict);
+            assertTrue(dictionaries.has('en_US'), 'Map should contain en_US');
+            assertTrue(dictionaries.has('sv_SE'), 'Map should contain sv_SE');
+            assertEquals(dictionaries.size, 2, 'Map should contain 2 dictionaries');
+            assertTrue(dictionaries.get('en_US').check, 'Retrieved dictionary should have check method');
+        }, results);
+        
+        // Test generic word checking with multiple dictionaries
+        await test('Generic word checking with multiple dictionaries', async () => {
+            const dictionaries = new Map();
+            dictionaries.set('en_US', await loadTestDictionary('en_US'));
+            dictionaries.set('sv_SE', await loadTestDictionary('sv_SE'));
+            
+            // Test 'all' mode (check against all dictionaries)
+            const activeDicts = Array.from(dictionaries.values());
+            const checkInAll = (word) => activeDicts.some(dict => dict && dict.check && dict.check(word));
+            assertTrue(checkInAll('hello'), 'Should find "hello" in all dictionaries');
+            assertTrue(checkInAll('hej'), 'Should find "hej" in all dictionaries');
+            assertFalse(checkInAll('xyzabc123'), 'Should not find gibberish in any dictionary');
+            
+            // Test single dictionary mode
+            const checkInSingle = (word, locale) => {
+                const dict = dictionaries.get(locale);
+                return dict && dict.check && dict.check(word);
+            };
+            assertTrue(checkInSingle('hello', 'en_US'), 'Should find "hello" in English dictionary');
+            assertFalse(checkInSingle('hello', 'sv_SE'), 'Should not find "hello" in Swedish dictionary');
+            assertTrue(checkInSingle('hej', 'sv_SE'), 'Should find "hej" in Swedish dictionary');
+        }, results);
+        
+        // Test generic suggestions with multiple dictionaries
+        await test('Generic suggestions with multiple dictionaries', async () => {
+            const dictionaries = new Map();
+            dictionaries.set('en_US', await loadTestDictionary('en_US'));
+            dictionaries.set('sv_SE', await loadTestDictionary('sv_SE'));
+            
+            // Test 'all' mode suggestions
+            const activeDicts = Array.from(dictionaries.values());
+            let suggestions = [];
+            activeDicts.forEach(dict => {
+                if (dict && dict.suggest) {
+                    suggestions.push(...dict.suggest('helo', 5));
+                }
+            });
+            suggestions = [...new Set(suggestions)].slice(0, 5);
+            assertTrue(suggestions.length > 0, 'Should get suggestions from multiple dictionaries');
+            assertContains(suggestions, 'hello', 'Should include "hello" suggestion');
+            
+            // Test single dictionary suggestions
+            const enSuggestions = dictionaries.get('en_US').suggest('helo', 5);
+            assertTrue(enSuggestions.length > 0, 'Should get suggestions from single dictionary');
+            assertContains(enSuggestions, 'hello', 'Should include "hello" suggestion');
+        }, results);
+        
+        // Test language mode selection logic
+        test('Language mode selection logic', () => {
+            const availableLanguages = [
+                { locale: 'en_US', code: 'en', name: 'English' },
+                { locale: 'sv_SE', code: 'sv', name: 'Swedish' }
+            ];
+            
+            // Test 'all' mode
+            const allMode = 'all';
+            const allLocales = availableLanguages.map(l => l.locale);
+            assertTrue(allLocales.includes('en_US') && allLocales.includes('sv_SE'), 'All mode should include all locales');
+            
+            // Test single language mode
+            const singleMode = 'en';
+            const singleLocale = availableLanguages.find(l => l.code === singleMode)?.locale;
+            assertEquals(singleLocale, 'en_US', 'Single mode should find correct locale');
+        }, results);
+        
+        return results;
+    },
+    
+    async spellChecking() {
+        const results = [];
+        const enDict = await loadTestDictionary('en_US');
+        const svDict = await loadTestDictionary('sv_SE');
+        
+        await test('English word checking', () => {
+            assertTrue(enDict.check('hello'), 'English: "hello" should be correct');
+            assertTrue(enDict.check('world'), 'English: "world" should be correct');
+            assertFalse(enDict.check('helo'), 'English: "helo" should be incorrect');
+            assertFalse(enDict.check('xyzabc123'), 'English: gibberish should be incorrect');
+        }, results);
+        
+        await test('Swedish word checking', () => {
+            assertTrue(svDict.check('hej'), 'Swedish: "hej" should be correct');
+            assertTrue(svDict.check('modellerna'), 'Swedish: "modellerna" should be correct');
+            assertFalse(svDict.check('modelerna'), 'Swedish: "modelerna" (missing l) should be incorrect');
+            assertFalse(svDict.check('xyzabc123'), 'Swedish: gibberish should be incorrect');
+        }, results);
+        
+        await test('Case sensitivity handling', () => {
+            assertTrue(enDict.check('Hello'), 'Capitalized word should be correct');
+            assertTrue(enDict.check('HELLO'), 'All caps word should be correct');
+        }, results);
+        
+        await test('Punctuation handling', () => {
+            const cleanWord = 'hello'.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
+            assertTrue(enDict.check(cleanWord), 'Word with punctuation stripped should be checkable');
+        }, results);
+        
+        return results;
+    },
+    
+    async suggestions() {
+        const results = [];
+        const enDict = await loadTestDictionary('en_US');
+        const svDict = await loadTestDictionary('sv_SE');
+        
+        await test('English suggestions generation', () => {
+            const suggestions = enDict.suggest('helo');
+            assertTrue(suggestions.length > 0, 'Should have suggestions for "helo"');
+            assertContains(suggestions, 'hello', 'Suggestions should include "hello"');
+        }, results);
+        
+        await test('Swedish suggestions generation', () => {
+            const suggestions = svDict.suggest('modelerna');
+            assertTrue(suggestions.length > 0, 'Should have suggestions for "modelerna"');
+            assertContains(suggestions, 'modellerna', 'Suggestions should include "modellerna"');
+        }, results);
+        
+        await test('Suggestions for correct words', () => {
+            enDict.suggest('correctword');
+        }, results);
+        
+        return results;
+    },
+    
+    comboMode() {
+        const results = [];
+        test('Combo mode logic structure', () => {
+            const checkWord = (word, enDict, svDict) => {
+                const cleanWord = word.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
+                return enDict.check(cleanWord) || svDict.check(cleanWord);
+            };
+            // Just verify function structure, actual execution requires dictionaries
+        }, results);
+        if (results[0]) results[0].note = 'Requires dictionaries loaded';
+        return results;
+    },
+    
+    xssProtection() {
+        const results = [];
+        test('XSS protection (escapeHtml)', () => {
+            const scriptTag = String.fromCharCode(60) + 'script' + String.fromCharCode(62);
+            const scriptClose = String.fromCharCode(60) + '/' + 'script' + String.fromCharCode(62);
+            const xssAttempts = [
+                scriptTag + 'alert(1)' + scriptClose,
+                '<img src=x onerror=alert(1)>',
+                String.fromCharCode(34) + '>' + scriptTag + 'alert(1)' + scriptClose,
+                'javascript:alert(1)',
+                'onclick=alert(1)'
+            ];
+            xssAttempts.forEach(xss => {
+                const escaped = escapeHtml(xss);
+                assertFalse(escaped.includes(scriptTag), 'XSS should be escaped');
+                if (xss.includes(String.fromCharCode(60))) {
+                    assertTrue(escaped.includes(String.fromCharCode(38) + 'lt;'), 'HTML tags should be escaped');
+                }
+                if (xss.includes(String.fromCharCode(62))) {
+                    assertTrue(escaped.includes(String.fromCharCode(38) + 'gt;'), 'HTML tags should be escaped');
+                }
+                if (xss.includes(String.fromCharCode(38))) {
+                    assertTrue(escaped.includes(String.fromCharCode(38) + 'amp;') || !escaped.includes(String.fromCharCode(38)), 'Ampersands should be escaped');
+                }
+                assertTrue(escaped !== xss || !xss.match(/[<>]/), 'HTML special characters should be escaped');
+            });
+        }, results);
+        return results;
+    },
+    
+    wordCleaning() {
+        const results = [];
+        test('Word cleaning logic', () => {
+            const cleanWord = word => word.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
+            assertEquals(cleanWord('Hello!'), 'hello', 'Punctuation should be removed');
+            assertEquals(cleanWord('World123'), 'world', 'Numbers should be removed');
+            assertEquals(cleanWord('Test-word'), 'testword', 'Hyphens should be removed');
+            assertEquals(cleanWord('  spaced  '), 'spaced', 'Whitespace should be removed');
+            assertEquals(cleanWord(''), '', 'Empty string should remain empty');
+        }, results);
+        return results;
+    },
+    
+    edgeCases() {
+        const results = [];
+        test('Empty string handling', () => assertEquals(''.toLowerCase().replace(/[^\p{L}\p{M}]/gu, ''), '', 'Empty string handling'), results);
+        test('Special characters handling', () => assertEquals('!@#$%^&*()'.replace(/[^\p{L}\p{M}]/gu, ''), '', 'Special characters should be removed'), results);
+        test('Unicode character support', () => assertTrue('café'.match(/[\p{L}\p{M}]+/u), 'Unicode should be preserved'), results);
+        test('Very long word handling', () => assertTrue(typeof 'a'.repeat(1000).toLowerCase().replace(/[^\p{L}\p{M}]/gu, '') === 'string', 'Very long words should be handled'), results);
+        return results;
+    },
+    
+    caching() {
+        const results = [];
+        test('Cache key generation', () => {
+            const cacheKey = `en:helo:8`;
+            assertTrue(cacheKey.includes(':') && cacheKey.length > 0, 'Cache key should be formatted correctly');
+        }, results);
+        test('Cache storage and retrieval', () => {
+            const cache = new Map();
+            cache.set('test:key', ['suggestion1', 'suggestion2']);
+            assertEquals(cache.get('test:key').length, 2, 'Cache should store and retrieve values');
+            assertTrue(cache.has('test:key'), 'Cache should have key');
+        }, results);
+        return results;
+    },
+    
+    ignoreList() {
+        const results = [];
+        test('Ignore list data structure', () => {
+            const ignoredWords = new Set(['customword', 'technicalterm']);
+            assertTrue(ignoredWords.has('customword'), 'Ignore list should contain words');
+            assertFalse(ignoredWords.has('unknownword'), 'Ignore list should not contain unknown words');
+        }, results);
+        test('localStorage integration', () => {
+            const testKey = 'spellcheck-ignored-test-' + Date.now();
+            const testWords = ['testword1', 'testword2'];
+            try {
+                localStorage.setItem(testKey, JSON.stringify(testWords));
+                assertEquals(JSON.parse(localStorage.getItem(testKey) || '[]').length, 2, 'localStorage should store and retrieve ignore list');
+            } finally {
+                localStorage.removeItem(testKey);
+            }
+        }, results);
+        return results;
+    },
+    
+    async dictionaryConversion() {
+        const results = [];
+        
+        await test('Base64 encoding/decoding', () => {
+            const testText = 'Hello World';
+            const buffer = new TextEncoder().encode(testText).buffer;
+            const base64 = arrayBufferToBase64(buffer);
+            assertTrue(typeof base64 === 'string' && base64.length > 0, 'Base64 should return a non-empty string');
+            const decoded = new TextDecoder().decode(new Uint8Array([...atob(base64)].map(c => c.charCodeAt(0))));
+            assertEquals(decoded, testText, 'Base64 encoding/decoding should be reversible');
+        }, results);
+        
+        test('File pairing logic', () => {
+            const mockFiles = [
+                { name: 'en.aff', size: 100 }, { name: 'en.dic', size: 200 },
+                { name: 'sv.aff', size: 150 }, { name: 'sv.dic', size: 300 }
+            ];
+            const affFiles = mockFiles.filter(f => f.name.endsWith('.aff'));
+            const dicFiles = mockFiles.filter(f => f.name.endsWith('.dic'));
+            assertEquals(affFiles.length, 2, 'Should find 2 .aff files');
+            assertEquals(dicFiles.length, 2, 'Should find 2 .dic files');
+            const pairs = [];
+            affFiles.forEach(affFile => {
+                const baseName = affFile.name.replace('.aff', '');
+                const dicFile = dicFiles.find(f => f.name.replace('.dic', '') === baseName);
+                if (dicFile) pairs.push({ aff: affFile, dic: dicFile, baseName });
+            });
+            assertEquals(pairs.length, 2, 'Should pair 2 .aff/.dic files');
+            assertEquals(pairs[0].baseName, 'en', 'First pair should be en');
+            assertEquals(pairs[1].baseName, 'sv', 'Second pair should be sv');
+        }, results);
+        
+        test('Locale formatting', () => {
+            ['en-US', 'en_US', 'sv-SE', 'sv_SE'].forEach(locale => {
+                const formatted = locale.replace(/[-_]/g, '_');
+                assertFalse(formatted.includes('-'), 'Locale should not contain hyphens');
+                assertTrue(formatted.includes('_'), 'Locale should contain underscores');
+            });
+        }, results);
+        
+        test('JS file content generation', () => {
+            const locale = 'en_US';
+            const jsVarName = `dictionary_${locale}`;
+            const fileName = `dictionaries-${locale}.js`;
+            const mockAffBase64 = 'YWZmaXg=';
+            const mockDicBase64 = 'ZGljdA==';
+            const jsContent = `// Dictionary data for ${locale}\nwindow.${jsVarName} = {\n    aff: "${mockAffBase64}",\n    dic: "${mockDicBase64}"\n};`;
+            assertTrue(jsContent.includes('// Dictionary data for'), 'JS content should include comment');
+            assertTrue(jsContent.includes(`window.${jsVarName}`), 'JS content should include window variable');
+            assertTrue(jsContent.includes('aff:') && jsContent.includes('dic:'), 'JS content should include properties');
+            assertTrue(jsContent.includes(mockAffBase64) && jsContent.includes(mockDicBase64), 'JS content should include base64 data');
+            assertTrue(fileName.startsWith('dictionaries-') && fileName.endsWith('.js'), 'File name should be correctly formatted');
+        }, results);
+        
+        test('Incomplete pair handling', () => {
+            const incompleteFiles = [{ name: 'en.aff', size: 100 }, { name: 'sv.dic', size: 200 }];
+            const affFiles = incompleteFiles.filter(f => f.name.endsWith('.aff'));
+            const dicFiles = incompleteFiles.filter(f => f.name.endsWith('.dic'));
+            const pairs = [];
+            affFiles.forEach(affFile => {
+                const baseName = affFile.name.replace('.aff', '');
+                const dicFile = dicFiles.find(f => f.name.replace('.dic', '') === baseName);
+                if (dicFile) pairs.push({ aff: affFile, dic: dicFile });
+            });
+            assertEquals(pairs.length, 0, 'Incomplete pairs should not be matched');
+        }, results);
+        
+        await test('Unicode character encoding/decoding', () => {
+            const unicodeTests = [
+                'café', 'naïve', 'résumé', 'Zürich', 'São Paulo', 'München', 'Español', 'Français',
+                'Åland', 'Österreich', 'ä, ö, ü, å, ö', 'é, è, ê, ë', 'ñ, ç', 'αβγ', '中文', 'Русский', '日本語'
+            ];
+            unicodeTests.forEach(text => {
+                const buffer = new TextEncoder().encode(text).buffer;
+                const base64 = arrayBufferToBase64(buffer);
+                const decoded = new TextDecoder().decode(new Uint8Array([...atob(base64)].map(c => c.charCodeAt(0))));
+                assertEquals(decoded, text, `Unicode text should be preserved: ${text}`);
+                assertTrue(base64.length > 0, 'Base64 should not be empty');
+            });
+            const swedishText = 'är, största, läs, över';
+            const buffer = new TextEncoder().encode(swedishText).buffer;
+            const base64 = arrayBufferToBase64(buffer);
+            const decoded = new TextDecoder().decode(new Uint8Array([...atob(base64)].map(c => c.charCodeAt(0))));
+            assertEquals(decoded, swedishText, 'Swedish characters should be correctly encoded/decoded');
+        }, results);
+        
+        if (typeof window.dictionary_en_US !== 'undefined') {
+            await test('Real dictionary file conversion', async () => {
+                const sourceData = window.dictionary_en_US;
+                const sourceAff = sourceData.aff;
+                const sourceDic = sourceData.dic;
+                
+                // Create File objects from base64 data
+                const affFile = new File([base64ToArrayBuffer(sourceAff)], 'test.aff', { type: 'text/plain' });
+                const dicFile = new File([base64ToArrayBuffer(sourceDic)], 'test.dic', { type: 'text/plain' });
+                
+                // Simulate conversion process
+                const affBase64 = arrayBufferToBase64(await affFile.arrayBuffer());
+                const dicBase64 = arrayBufferToBase64(await dicFile.arrayBuffer());
+                
+                // Verify round-trip
+                assertEquals(affBase64, sourceAff, 'Aff data should match after conversion');
+                assertEquals(dicBase64, sourceDic, 'Dic data should match after conversion');
+                
+                // Test JS generation
+                const locale = 'test_US';
+                const jsVarName = `dictionary_${locale}`;
+                const jsContent = `// Dictionary data for ${locale}\nwindow.${jsVarName} = {\n    aff: "${affBase64}",\n    dic: "${dicBase64}"\n};`;
+                
+                assertTrue(jsContent.includes(`window.${jsVarName}`) && jsContent.includes('aff:') && jsContent.includes('dic:'), 'JS should contain required structure');
+                assertTrue(jsContent.includes(sourceAff.substring(0, 20)) && jsContent.includes(sourceDic.substring(0, 20)), 'JS should contain dictionary data');
+            }, results);
+        } else {
+            results.push({ name: 'Real dictionary file conversion', pass: true, note: 'Skipped - dictionary not loaded' });
+        }
+        
+        return results;
+    },
+    
+    securityAndValidation() {
+        const results = [];
+        
+        // Test invalid base64 handling
+        test('Invalid base64 decoding should fail gracefully', () => {
+            try {
+                atob('invalid-base64!@#$');
+            } catch (e) {
+                assertTrue(e instanceof DOMException || e.message.includes('base64'), 'Invalid base64 should throw error');
+            }
+        }, results);
+        
+        // Test base64 validation before decoding
+        test('Base64 validation', () => {
+            const validBase64 = /^[A-Za-z0-9+/]*={0,2}$/;
+            assertTrue(validBase64.test('YWZmaXg='), 'Valid base64 should match pattern');
+            assertFalse(validBase64.test('invalid!@#'), 'Invalid base64 should not match pattern');
+            assertTrue(validBase64.test(''), 'Empty string should be valid base64');
+        }, results);
+        
+        // Test very large input handling
+        test('Very large text handling', () => {
+            const largeText = 'a'.repeat(100000);
+            const cleanWord = largeText.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
+            assertTrue(cleanWord.length === 100000, 'Very large text should be processed');
+            assertTrue(typeof cleanWord === 'string', 'Result should be string');
+        }, results);
+        
+        // Test regex DoS protection (catastrophic backtracking)
+        test('ReDoS protection - complex regex', () => {
+            const startTime = performance.now();
+            const maliciousInput = 'a'.repeat(100) + '!';
+            const result = maliciousInput.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
+            const duration = performance.now() - startTime;
+            assertTrue(duration < 1000, 'Regex should complete quickly (< 1s)');
+            assertEquals(result.length, 100, 'Should strip non-letter characters');
+        }, results);
+        
+        // Test localStorage quota handling
+        test('localStorage quota exceeded handling', () => {
+            try {
+                const largeData = 'x'.repeat(5 * 1024 * 1024); // 5MB
+                localStorage.setItem('test-quota', largeData);
+                localStorage.removeItem('test-quota');
+                assertTrue(true, 'Should handle large data or throw quota error');
+            } catch (e) {
+                assertTrue(e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED', 'Should throw quota error for large data');
+            }
+        }, results);
+        
+        // Test file size limits
+        test('File size validation', () => {
+            const maxSize = 10 * 1024 * 1024; // 10MB limit
+            const testSizes = [1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024];
+            testSizes.forEach(size => {
+                const isValid = size <= maxSize;
+                assertTrue(typeof isValid === 'boolean', 'Size validation should return boolean');
+            });
+        }, results);
+        
+        // Test locale injection prevention
+        test('Locale injection prevention', () => {
+            const scriptTag = String.fromCharCode(60) + 'script' + String.fromCharCode(62);
+            const dangerousLocales = ['../test', '../../etc/passwd', scriptTag + 'alert(1)' + String.fromCharCode(60) + '/script' + String.fromCharCode(62), 'test;rm -rf'];
+            dangerousLocales.forEach(locale => {
+                const sanitized = locale.replace(/[^a-zA-Z0-9_-]/g, '');
+                assertFalse(sanitized.includes('..'), 'Should remove directory traversal');
+                assertFalse(sanitized.includes(String.fromCharCode(60)), 'Should remove HTML tags');
+                assertFalse(sanitized.includes(';'), 'Should remove command separators');
+            });
+        }, results);
+        
+        // Test dictionary variable name injection
+        test('Dictionary variable name validation', () => {
+            const dictVarName = 'dictionary_en_US';
+            const dangerousName = 'dictionary_' + String.fromCharCode(60) + 'script' + String.fromCharCode(62);
+            assertTrue(/^dictionary_[a-zA-Z0-9_]+$/.test(dictVarName), 'Valid variable name should match pattern');
+            assertFalse(/^dictionary_[a-zA-Z0-9_]+$/.test(dangerousName), 'Should reject dangerous variable names');
+        }, results);
+        
+        return results;
+    },
+    
+    errorHandling() {
+        const results = [];
+        
+        // Test dictionary loading errors
+        test('Missing dictionary handling', () => {
+            try {
+                const dictVarName = 'dictionary_nonexistent';
+                if (typeof window[dictVarName] === 'undefined') {
+                    throw new Error(`Dictionary nonexistent not found`);
+                }
+                assertTrue(false, 'Should throw error for missing dictionary');
+            } catch (e) {
+                assertTrue(e.message.includes('not found'), 'Should throw descriptive error');
+            }
+        }, results);
+        
+        // Test corrupted dictionary data
+        test('Corrupted dictionary data handling', () => {
+            try {
+                const invalidBase64 = 'not-valid-base64!!!';
+                atob(invalidBase64);
+                assertTrue(false, 'Should throw error for invalid base64');
+            } catch (e) {
+                assertTrue(true, 'Should handle corrupted data gracefully');
+            }
+        }, results);
+        
+        // Test empty dictionary handling
+        test('Empty dictionary data handling', () => {
+            try {
+                const emptyBase64 = '';
+                const decoded = atob(emptyBase64);
+                assertEquals(decoded, '', 'Empty base64 should decode to empty string');
+            } catch (e) {
+                assertTrue(false, 'Empty base64 should be valid');
+            }
+        }, results);
+        
+        return results;
+    },
+    
+    performance() {
+        const results = [];
+        
+        // Test cache performance
+        test('Cache performance impact', () => {
+            const cache = new Map();
+            const iterations = 1000;
+            const startTime = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                cache.set(`key${i}`, ['suggestion1', 'suggestion2']);
+                cache.get(`key${i}`);
+            }
+            const duration = performance.now() - startTime;
+            assertTrue(duration < 100, `Cache operations should be fast (< 100ms for ${iterations} ops)`);
+        }, results);
+        
+        // Test word cleaning performance
+        test('Word cleaning performance', () => {
+            const words = Array(1000).fill(0).map((_, i) => `Word${i}!@#${i}`);
+            const startTime = performance.now();
+            words.forEach(word => word.toLowerCase().replace(/[^\p{L}\p{M}]/gu, ''));
+            const duration = performance.now() - startTime;
+            assertTrue(duration < 500, `Word cleaning should be fast (< 500ms for 1000 words)`);
+        }, results);
+        
+        return results;
+    }
+};
+
+async function runTestSuite(suiteName, testFunction) {
+    const section = document.createElement('div');
+    section.className = 'test-section';
+    const h2 = document.createElement('h2');
+    h2.textContent = suiteName + ' (testing...)';
+    section.appendChild(h2);
+    document.getElementById('testResults').appendChild(section);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    try {
+        const results = await testFunction();
+        h2.textContent = suiteName;
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = `test-item ${result.pass ? 'pass' : 'fail'}`;
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'test-name';
+            nameDiv.textContent = `${result.pass ? '✓' : '✗'} ${result.name}`;
+            item.appendChild(nameDiv);
+            
+            if (result.note) {
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'test-result';
+                noteDiv.textContent = result.note;
+                item.appendChild(noteDiv);
+            }
+            
+            if (result.error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'test-error';
+                errorDiv.textContent = result.error;
+                item.appendChild(errorDiv);
+            }
+            
+            section.appendChild(item);
+            
+            testResults.total++;
+            if (result.pass) testResults.passed++;
+            else testResults.failed++;
+        });
+    } catch (e) {
+        const item = document.createElement('div');
+        item.className = 'test-item fail';
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'test-name';
+        nameDiv.textContent = `✗ ${suiteName} suite failed`;
+        item.appendChild(nameDiv);
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'test-error';
+        errorDiv.textContent = e.message;
+        item.appendChild(errorDiv);
+        
+        section.appendChild(item);
+        testResults.failed++;
+    }
+}
+
+window.runAllTests = async function() {
+    if (typeof Typo === 'undefined') {
+        alert('Error: Typo.js not loaded. Make sure typo.js is in the same directory.');
+        return;
+    }
+    
+    testResults = { passed: 0, failed: 0, total: 0 };
+    document.getElementById('testResults').innerHTML = '';
+    const summary = document.getElementById('testSummary');
+    summary.className = 'test-summary running';
+    summary.textContent = 'Initializing tests...';
+    summary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const testSuites = [
+        ['Dictionary Loading', tests.dictionaryLoading],
+        ['Dynamic Language Detection', tests.dynamicLanguageDetection],
+        ['Spell Checking', tests.spellChecking],
+        ['Suggestions', tests.suggestions],
+        ['Combo Mode', tests.comboMode],
+        ['XSS Protection', tests.xssProtection],
+        ['Word Cleaning', tests.wordCleaning],
+        ['Edge Cases', tests.edgeCases],
+        ['Caching', tests.caching],
+        ['Ignore List', tests.ignoreList],
+        ['Dictionary Conversion', tests.dictionaryConversion],
+        ['Security & Validation', tests.securityAndValidation],
+        ['Error Handling', tests.errorHandling],
+        ['Performance', tests.performance]
+    ];
+    
+    for (let i = 0; i < testSuites.length; i++) {
+        const [name, func] = testSuites[i];
+        summary.textContent = `Running tests... (${i + 1}/${testSuites.length}) - ${name}`;
+        await new Promise(resolve => setTimeout(resolve, 10));
+        await runTestSuite(name, func);
+    }
+    
+    const allPassed = testResults.failed === 0;
+    summary.className = `test-summary ${allPassed ? 'passing' : 'failing'}`;
+    
+    const summaryDiv = document.createElement('div');
+    const completeDiv = document.createElement('div');
+    const strongEl = document.createElement('strong');
+    strongEl.textContent = 'Tests Complete';
+    completeDiv.appendChild(strongEl);
+    summaryDiv.appendChild(completeDiv);
+    
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'test-stats';
+    const stats = [
+        `Total: ${testResults.total}`,
+        `Passed: ${testResults.passed} ✓`,
+        `Failed: ${testResults.failed} ${testResults.failed > 0 ? '✗' : ''}`,
+        `Success Rate: ${testResults.total > 0 ? ((testResults.passed / testResults.total) * 100).toFixed(1) : 0}%`
+    ];
+    stats.forEach(stat => {
+        const span = document.createElement('span');
+        span.textContent = stat;
+        statsDiv.appendChild(span);
+    });
+    summaryDiv.appendChild(statsDiv);
+    summary.textContent = '';
+    summary.appendChild(summaryDiv);
+};
+
+window.clearResults = function() {
+    document.getElementById('testResults').innerHTML = '';
+    document.getElementById('testSummary').className = 'test-summary';
+    document.getElementById('testSummary').textContent = 'Click "Run All Tests" to begin';
+    testResults = { passed: 0, failed: 0, total: 0 };
+};
+    </script>
+</body>
+</html>

@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Spell Checker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; }
+        .container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 24px; max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 8px 12px; background: #fafafa; border-radius: 6px; border: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .header-left { display: flex; align-items: baseline; gap: 8px; flex: 1; }
+        h1 { margin: 0; color: #333; font-size: 22px; font-weight: 600; }
+        .subtitle { color: #666; margin: 0; font-size: 13px; line-height: 1; }
+        .language-selector { display: flex; align-items: baseline; gap: 8px; }
+        .language-selector label { margin: 0; font-weight: 500; color: #333; font-size: 13px; white-space: nowrap; }
+        .language-selector .radio-group { display: flex; gap: 12px; align-items: baseline; }
+        .language-selector .radio-option { display: flex; align-items: baseline; cursor: pointer; gap: 6px; }
+        .language-selector input[type="radio"] { margin: 0; cursor: pointer; flex-shrink: 0; }
+        .language-selector .radio-option label { margin: 0; cursor: pointer; font-size: 13px; color: #555; user-select: none; }
+        .language-selector .radio-option:hover label { color: #333; }
+        #text-area { width: 100%; min-height: 300px; flex: 1; padding: 12px; font-size: 15px; line-height: 1.6; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; position: relative; background: white; resize: vertical; transition: border-color 0.2s; white-space: pre-wrap; }
+        #text-area:focus { outline: none; border-color: #999; }
+        #text-area:empty:before { content: attr(placeholder); color: #adb5bd; pointer-events: none; }
+        .spell-error { background: linear-gradient(transparent 0, transparent 85%, #ff6b6b 85%); cursor: pointer; border-radius: 2px; }
+        .spell-error:hover { background: linear-gradient(transparent 0, transparent 85%, #ff5252 85%); }
+        .spell-ignored { border-bottom: 1px dotted #999; cursor: pointer; color: #666; }
+        .spell-ignored:hover { background: rgba(0,0,0,0.05); border-bottom-color: #666; }
+        .suggestions-menu { position: fixed; background: white; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 4px 0; min-width: 160px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; pointer-events: auto; }
+        .suggestions-menu.show { display: block; }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 14px; color: #333; }
+        .suggestion-item:hover, .suggestion-item:first-child:hover { background: #f5f5f5; }
+        .suggestion-item:first-child { font-weight: 600; color: #000; border-bottom: 1px solid #eee; }
+        .suggestion-item.highlighted { background: #e3f2fd; }
+        .loading { margin-top: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px; background: #e3f2fd; color: #1976d2; display: none; }
+        .loading.active { display: block; }
+        .status { margin-top: 12px; padding: 10px 12px; border-radius: 6px; font-size: 14px; display: none; }
+        .status.active { display: block; }
+        .status.has-errors { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+        .status.no-errors { background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; }
+        .status-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; position: relative; }
+        .status-row .status { margin-top: 0; flex: 1; position: absolute; left: 0; }
+        .ai-button-bottom { padding: 10px 16px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.2s; white-space: nowrap; line-height: normal; box-sizing: border-box; }
+        .ai-button-bottom:hover { background: #0052a3; }
+        .ai-button-bottom:active { background: #003d7a; }
+        .language-selector label { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color 0.2s; }
+        .language-selector label:hover { text-decoration-color: #333; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .toast-notification { position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 3000; font-size: 14px; animation: slideInRight 0.3s ease-out; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .toast-notification.hide { animation: slideOutRight 0.3s ease-out; }
+        @media (max-width: 600px) { .container { padding: 16px; } .header-actions { flex-direction: column; width: 100%; } .status-row { flex-direction: column; align-items: stretch; } .ai-button-bottom { width: 100%; } .tips-row { flex-direction: column; gap: 4px; } .tips-row span { text-align: left !important; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Offline Spell Checker</h1>
+                <span class="subtitle">Free, privacy-focused, open-source</span>
+            </div>
+            <div class="header-actions">
+            <div class="language-selector">
+                    <label><a href="tools/converter.html" style="text-decoration: none; color: inherit;">Language:</a></label>
+                    <div class="radio-group" id="languageRadioGroup">
+                        <!-- Dynamically generated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div id="text-area" contenteditable="true" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Type your text here..."></div>
+        <div id="loading" class="loading">Loading dictionaries...</div>
+        <div class="tips-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666; margin-top: 8px;">
+            <span>💡 Press Esc to force spell check</span>
+            <span>⚠️ Never send sensitive text to AI service:</span>
+        </div>
+        <div class="status-row">
+        <div id="status" class="status"></div>
+            <button class="ai-button-bottom" id="aiButton" title="Copy text and open DuckDuckGo AI Chat (anonymous, privacy-focused)" onclick="openInDuckDuckGoAI()">
+                📋 Copy & Open AI Chat
+            </button>
+        </div>
+        <div id="suggestions-menu" class="suggestions-menu"></div>
+    </div>
+
+    <script src="tools/typo.js"></script>
+    <script src="tools/dictionaries-en_US.js"></script>
+    <script src="tools/dictionaries-sv_SE.js"></script>
+
+    <script>
+        // Auto-detect available dictionaries
+        function detectAvailableLanguages() {
+            const languages = [];
+            for (const key in window) {
+                if (key.startsWith('dictionary_') && window[key] && window[key].aff && window[key].dic) {
+                    const locale = key.replace('dictionary_', '');
+                    const code = locale.split('_')[0]; // 'en' from 'en_US'
+                    languages.push({ locale, code, name: getLanguageName(code, locale) });
+                }
+            }
+            return languages.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        
+        function getLanguageName(code, locale) {
+            const names = { en: 'English', sv: 'Swedish', de: 'German', fr: 'French', es: 'Spanish', 
+                          it: 'Italian', pt: 'Portuguese', nl: 'Dutch', ru: 'Russian', ja: 'Japanese',
+                          zh: 'Chinese', ko: 'Korean', pl: 'Polish', cs: 'Czech', tr: 'Turkish' };
+            return names[code] || locale.replace('_', ' ').toUpperCase();
+        }
+        
+        // ====== CONFIGURATION ======
+        const CONFIG = {
+            SPELL_CHECK_IDLE_DELAY: 2000,  // Check after 2 seconds of no typing
+            SUGGESTION_HOVER_DELAY: 300,
+            SUGGESTION_HIDE_DELAY: 200,
+            MAX_CACHE_SIZE: 100,
+            MAX_UNDO_HISTORY: 50,
+            PRE_CACHE_WORD_COUNT: 10,  // Pre-cache suggestions for first N misspelled words
+            PRE_CACHE_DELAY: 100  // Delay between each word's suggestion pre-caching (ms)
+        };
+        
+        // ====== STATE MANAGEMENT ======
+        const availableLanguages = detectAvailableLanguages();
+        const dictionaries = new Map();
+        let languageMode = 'all', undoStack = [], redoStack = [], isUndoRedoAction = false;
+        let suggestionCache = new Map(), isDictionaryLoading = false;
+        let ignoredWords = new Set(JSON.parse(localStorage.getItem('spellcheck-ignored') || '[]'));
+        let selectedSuggestionIndex = -1, lastTextContent = '', isLanguageSwitching = false;
+        let spellCheckTimeout = null, idleCheckTimeout = null, savedCursorPosition = null, enterKeyPressed = false;
+        let preCacheTimeout = null, isPreCaching = false;
+        
+        // ====== DOM CACHE ======
+        let textArea, menu, statusDiv;
+        
+        function scheduleSpellCheck(delay = 0) {
+            clearTimeout(spellCheckTimeout);
+            spellCheckTimeout = setTimeout(() => {
+                performSpellCheck();
+            }, delay);
+        }
+        
+        function triggerSpellCheckWithCursor() {
+            savedCursorPosition = saveCursorPosition();
+            textArea.blur(); // This triggers spell check and cursor restore
+        }
+        
+        // ====== UTILITIES ======
+        function cleanWord(word) {
+            return word?.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '') || '';
+        }
+        
+        function decodeBase64ToUTF8(base64String) {
+            return new TextDecoder('utf-8').decode(new Uint8Array([...atob(base64String)].map(c => c.charCodeAt(0))));
+        }
+        
+        function loadDictionary(locale) {
+            return new Promise((resolve) => {
+                const dictVarName = `dictionary_${locale}`;
+                if (!window[dictVarName]) {
+                    console.error(`Dictionary ${locale} not found`);
+                    resolve(null);
+                    return;
+                }
+                
+                try {
+                    const dictData = window[dictVarName];
+                    const affData = decodeBase64ToUTF8(dictData.aff);
+                    const dicData = decodeBase64ToUTF8(dictData.dic);
+                    const dict = new Typo(locale, affData, dicData);
+                    
+                    if (dict && dict.check && dict.loaded) {
+                        disableCompoundRules(dict);
+                        resolve(dict);
+                    } else {
+                        console.error(`Dictionary ${locale} failed to initialize`);
+                        resolve(null);
+                    }
+                } catch (e) {
+                    console.error(`Error loading dictionary ${locale}:`, e);
+                    resolve(null);
+                }
+            });
+        }
+        
+        function disableCompoundRules(dict) {
+            if (dict.compoundRules) { dict.compoundRules = []; delete dict.flags.COMPOUNDMIN; }
+        }
+        
+        function loadDictionaries(forceAll = false) {
+            if (isDictionaryLoading) return Promise.resolve();
+            isDictionaryLoading = true;
+            const toLoad = [];
+            const localesToLoad = forceAll || languageMode === 'all' 
+                ? availableLanguages.map(l => l.locale)
+                : [availableLanguages.find(l => l.code === languageMode)?.locale].filter(Boolean);
+            localesToLoad.forEach(locale => {
+                if (locale && !dictionaries.has(locale)) {
+                    toLoad.push(loadDictionary(locale).then(dict => { 
+                        if (dict) dictionaries.set(locale, dict); 
+                    }));
+                }
+            });
+            return Promise.all(toLoad).finally(() => { isDictionaryLoading = false; });
+        }
+        function loadAllDictionaries() { return loadDictionaries(true); }
+        
+        // ====== SPELL CHECKING ======
+        function getRequiredDictionaries() {
+            return languageMode === 'all'
+                ? availableLanguages.map(l => l.locale)
+                : [availableLanguages.find(l => l.code === languageMode)?.locale].filter(Boolean);
+        }
+        
+        function getActiveDictionaries() {
+            return languageMode === 'all' 
+                ? Array.from(dictionaries.values())
+                : [dictionaries.get(availableLanguages.find(l => l.code === languageMode)?.locale)].filter(Boolean);
+        }
+        
+        function getSuggestions(word, limit = 5) {
+            const cleaned = cleanWord(word);
+            if (!cleaned) return [];
+            
+            // Check cache first
+            const cacheKey = `${languageMode}:${cleaned}:${limit}`;
+            if (suggestionCache.has(cacheKey)) {
+                return suggestionCache.get(cacheKey);
+            }
+            
+            let suggestions = [];
+            const activeDicts = getActiveDictionaries();
+            
+            activeDicts.forEach(dict => {
+                if (dict && dict.suggest) {
+                    suggestions.push(...dict.suggest(cleaned, limit));
+                }
+            });
+            
+                // Remove duplicates and limit
+                suggestions = [...new Set(suggestions)].slice(0, limit);
+            
+            if (suggestionCache.size >= CONFIG.MAX_CACHE_SIZE) suggestionCache.delete(suggestionCache.keys().next().value);
+            suggestionCache.set(cacheKey, suggestions);
+            
+            return suggestions;
+        }
+        
+        function checkWord(word) {
+            const cleaned = cleanWord(word);
+            if (!cleaned) return true;
+            if (ignoredWords.has(cleaned)) return true;
+            
+            const activeDicts = getActiveDictionaries();
+            return activeDicts.some(dict => dict && dict.check && dict.check(cleaned));
+        }
+        
+        function toggleIgnoreList(word, add) {
+            const cleaned = cleanWord(word);
+            if (!cleaned) return;
+            if (add) ignoredWords.add(cleaned);
+            else if (ignoredWords.has(cleaned)) ignoredWords.delete(cleaned);
+            else return;
+            localStorage.setItem('spellcheck-ignored', JSON.stringify([...ignoredWords]));
+            lastTextContent = ''; // Force re-check to update highlights
+            performSpellCheck();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function highlightErrors(text) {
+            if (!text) return '';
+            const parts = text.split(/(\s+|[^\p{L}\p{M}]+)/u);
+            return parts.map(part => {
+                if (!part || /^\s+$/.test(part) || /^[^\p{L}\p{M}]+$/u.test(part)) {
+                    return escapeHtml(part);
+                }
+                const cleaned = cleanWord(part);
+                const isIgnored = cleaned && ignoredWords.has(cleaned);
+                const isCorrect = checkWord(part);
+                
+                if (isIgnored) {
+                    return `<span class="spell-ignored" data-word="${escapeHtml(part)}">${escapeHtml(part)}</span>`;
+                }
+                if (!isCorrect) {
+                    return `<span class="spell-error" data-word="${escapeHtml(part)}">${escapeHtml(part)}</span>`;
+                }
+                return escapeHtml(part);
+            }).join('');
+        }
+        
+        // ====== TEXT EXTRACTION ======
+        function getPlainText(element) {
+            return element.innerText || element.textContent || '';
+        }
+        
+        // ====== CURSOR POSITION ======
+        function saveCursorPosition() {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return null;
+            const range = selection.getRangeAt(0);
+            if (!textArea.contains(range.commonAncestorContainer)) return null;
+            
+            // Count characters before cursor
+            const preRange = range.cloneRange();
+            preRange.selectNodeContents(textArea);
+            preRange.setEnd(range.endContainer, range.endOffset);
+            
+            return preRange.toString().length;
+        }
+        
+        function restoreCursorPosition(position) {
+            if (position === null || position === undefined) return;
+            const text = getPlainText(textArea);
+            
+            // Clamp position to valid range
+            position = Math.min(position, text.length);
+            
+            const selection = window.getSelection();
+            const range = document.createRange();
+            
+            let charCount = 0;
+            let found = false;
+            
+            const walker = document.createTreeWalker(textArea, NodeFilter.SHOW_TEXT, null);
+            
+            let node;
+            while ((node = walker.nextNode())) {
+                const nodeLength = node.textContent.length;
+                if (charCount + nodeLength >= position) {
+                    const offset = position - charCount;
+                    range.setStart(node, offset);
+                    range.setEnd(node, offset);
+                    found = true;
+                    break;
+                }
+                charCount += nodeLength;
+            }
+            
+            if (!found) {
+                // Position at end if not found
+                range.selectNodeContents(textArea);
+                range.collapse(false);
+            }
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        
+        function performSpellCheck() {
+            if (textArea === document.activeElement) return;
+            
+            const text = getPlainText(textArea);
+            
+            // Skip if text hasn't changed
+            if (text === lastTextContent) return;
+            lastTextContent = text;
+            
+            if (!text.trim() && textArea.childNodes.length === 0) {
+                updateStatus();
+                return;
+            }
+            
+            const requiredDicts = getRequiredDictionaries();
+            if (requiredDicts.some(locale => !dictionaries.has(locale))) return;
+            
+            // Perform spell check (cursor is NOT in text area, so safe!)
+            const highlighted = highlightErrors(text);
+            const htmlWithBreaks = highlighted.replace(/\n/g, '<br>');
+            
+            // Only update if HTML changed
+            const currentHtml = textArea.innerHTML.replace(/\s+/g, ' ').trim();
+            const newHtml = htmlWithBreaks.replace(/\s+/g, ' ').trim();
+            
+            if (currentHtml !== newHtml) {
+                textArea.innerHTML = htmlWithBreaks;
+            }
+            
+            updateStatus();
+            preCacheSuggestions();
+        }
+        
+        function preCacheSuggestions() {
+            // Cancel any ongoing pre-caching
+            if (preCacheTimeout) {
+                clearTimeout(preCacheTimeout);
+                preCacheTimeout = null;
+            }
+            if (isPreCaching) return;
+            
+            // Get first N misspelled words
+            const errorElements = document.querySelectorAll('.spell-error');
+            if (errorElements.length === 0) return;
+            
+            const wordsToCache = Array.from(errorElements)
+                .slice(0, CONFIG.PRE_CACHE_WORD_COUNT)
+                .map(el => el.getAttribute('data-word'))
+                .filter(Boolean)
+                .filter(word => {
+                    const cleaned = cleanWord(word);
+                    const cacheKey = `${languageMode}:${cleaned}:8`;
+                    return !suggestionCache.has(cacheKey); // Only cache if not already cached
+                });
+            
+            if (wordsToCache.length === 0) return;
+            
+            isPreCaching = true;
+            let index = 0;
+            
+            const cacheNext = () => {
+                if (index >= wordsToCache.length || isLanguageSwitching) {
+                    isPreCaching = false;
+                    return;
+                }
+                
+                const word = wordsToCache[index];
+                if (word) {
+                    // Pre-compute suggestions (silently, don't block)
+                    getSuggestions(word, 8);
+                }
+                
+                index++;
+                if (index < wordsToCache.length) {
+                    preCacheTimeout = setTimeout(cacheNext, CONFIG.PRE_CACHE_DELAY);
+                } else {
+                    isPreCaching = false;
+                }
+            };
+            
+            // Start caching after a short delay to avoid blocking spell check
+            preCacheTimeout = setTimeout(cacheNext, 200);
+        }
+        
+        function showSuggestions(word, element, isIgnoredWord = false) {
+            const rect = element.getBoundingClientRect();
+            
+            // Position menu
+            menu.style.top = (rect.bottom + 2) + 'px'; 
+            menu.style.left = rect.left + 'px';
+            menu.classList.add('show');
+            selectedSuggestionIndex = -1;
+            
+            const cleaned = cleanWord(word);
+            const isIgnored = ignoredWords.has(cleaned);
+            
+            // Get suggestions only if not ignored
+            const suggestions = isIgnored ? [] : getSuggestions(word, 8);
+            
+            // Build menu HTML
+            const ignoreButton = `<div class="suggestion-item" data-action="ignore" style="border-top: 1px solid #eee; margin-top: 4px; padding-top: 8px;">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>`;
+            
+            if (suggestions.length === 0) {
+                menu.innerHTML = `<div class="suggestion-item" data-action="ignore">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>${!isIgnored ? '<div class="suggestion-item">No suggestions found</div>' : ''}`;
+            } else {
+                menu.innerHTML = suggestions.map(s => `<div class="suggestion-item" data-replace="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('') + ignoreButton;
+            }
+            
+            // Add click handlers
+            menu.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (item.getAttribute('data-action') === 'ignore') {
+                        toggleIgnoreList(word, !isIgnored);
+                    } else {
+                        const replacement = item.getAttribute('data-replace');
+                        if (replacement) replaceWord(word, replacement);
+                    }
+                    hideSuggestions();
+                });
+            });
+            
+            // Adjust position if off-screen
+            setTimeout(() => {
+                const menuRect = menu.getBoundingClientRect();
+                if (menuRect.right > window.innerWidth) {
+                    menu.style.left = (window.innerWidth - menuRect.width - 10) + 'px';
+                }
+                if (menuRect.bottom > window.innerHeight) {
+                    menu.style.top = (rect.top - menuRect.height - 5) + 'px';
+                }
+            }, 0);
+        }
+        
+        function hideSuggestions() {
+            menu.classList.remove('show');
+            selectedSuggestionIndex = -1;
+        }
+        
+        function saveState(force = false) {
+            if (isUndoRedoAction) return;
+            const currentText = getPlainText(textArea);
+            if (!force && undoStack.length > 0 && undoStack[undoStack.length - 1] === currentText) return;
+            undoStack.push(currentText); redoStack = [];
+            if (undoStack.length > CONFIG.MAX_UNDO_HISTORY) undoStack.shift();
+        }
+        function performUndoRedo(sourceStack, targetStack) {
+            if (sourceStack.length === 0) return;
+            targetStack.push(getPlainText(textArea));
+            isUndoRedoAction = true;
+            textArea.textContent = sourceStack.pop();
+            lastTextContent = ''; // Force re-check
+            isLanguageSwitching = true; // Prevent blur handler from interfering
+            const wasFocused = textArea === document.activeElement;
+            if (wasFocused) {
+                savedCursorPosition = saveCursorPosition();
+                textArea.blur();
+                setTimeout(() => {
+                    performSpellCheck();
+                    setTimeout(() => {
+                        if (savedCursorPosition !== null) {
+                            textArea.focus();
+                            restoreCursorPosition(savedCursorPosition);
+                            savedCursorPosition = null;
+                        }
+                        isLanguageSwitching = false;
+                        isUndoRedoAction = false;
+                    }, 10);
+                }, 10);
+            } else {
+                performSpellCheck();
+                isLanguageSwitching = false;
+                isUndoRedoAction = false;
+            }
+        }
+        
+        function undo() { performUndoRedo(undoStack, redoStack); }
+        function redo() { performUndoRedo(redoStack, undoStack); }
+        function replaceWord(oldWord, newWord) {
+            saveState();
+            textArea.textContent = getPlainText(textArea).replace(new RegExp(`\\b${oldWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), newWord);
+            performSpellCheck();
+        }
+        function updateStatus() {
+            const errors = document.querySelectorAll('.spell-error');
+            statusDiv.className = 'status active' + (errors.length > 0 ? ' has-errors' : ' no-errors');
+            statusDiv.textContent = errors.length > 0 ? `Found ${errors.length} error${errors.length === 1 ? '' : 's'}. Hover over highlighted words for suggestions.` : 'No spelling errors detected.';
+        }
+        
+        // ====== CLIPBOARD UTILITIES ======
+        function copyToClipboard(text) {
+            return new Promise((resolve, reject) => {
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(text).then(resolve).catch(() => {
+                        fallbackCopyToClipboard(text) ? resolve() : reject(new Error('Copy failed'));
+                    });
+                } else {
+                    fallbackCopyToClipboard(text) ? resolve() : reject(new Error('Clipboard API not available'));
+                }
+            });
+        }
+        
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                const success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                return success;
+            } catch (e) {
+                document.body.removeChild(textArea);
+                return false;
+            }
+        }
+        
+        function showToast(message, duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        }
+        function openInDuckDuckGoAI() {
+            const text = getPlainText(textArea).trim();
+            if (!text) {
+                showToast('Please enter some text first.', 2000);
+                return;
+            }
+            
+            // Copy to clipboard and open DuckDuckGo AI
+            copyToClipboard(text).then(() => {
+                window.open('https://duckduckgo.com/chat', '_blank');
+                showToast('✓ Text copied! DuckDuckGo AI opened. Paste (Ctrl+V) to start.');
+            }).catch(() => {
+                // Still open the tab even if copy fails
+                window.open('https://duckduckgo.com/chat', '_blank');
+                showToast('⚠ Could not copy to clipboard. Please copy manually.', 4000);
+            });
+        }
+        function init() {
+            // Cache DOM elements
+            textArea = document.getElementById('text-area');
+            menu = document.getElementById('suggestions-menu');
+            statusDiv = document.getElementById('status');
+            const radioGroup = document.getElementById('languageRadioGroup');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Generate language selector
+            if (availableLanguages.length > 0) {
+                const options = (availableLanguages.length > 1 ? [{code: 'all', name: 'All'}] : [])
+                    .concat(availableLanguages)
+                    .map(lang => `<div class="radio-option" onclick="document.getElementById('lang-${lang.code}').click()">
+                        <input type="radio" name="language-mode" value="${lang.code}" id="lang-${lang.code}" ${lang.code === 'all' ? 'checked' : ''}>
+                        <label for="lang-${lang.code}">${lang.name}</label></div>`).join('');
+                radioGroup.innerHTML = options;
+            }
+            
+            const langRadios = document.querySelectorAll('input[name="language-mode"]');
+            loadingDiv.classList.add('active');
+            setTimeout(() => {
+                loadAllDictionaries().then(() => {
+                    loadingDiv.classList.remove('active');
+                    const text = getPlainText(textArea);
+                    if (text && text !== 'Type here to check spelling...') performSpellCheck();
+                });
+            }, 100);
+            // Save state on input (keystrokes, typing)
+            textArea.addEventListener('input', () => {
+                if (!isUndoRedoAction) saveState();
+                lastTextContent = ''; // Mark text as changed
+                
+                // If Enter was just pressed, check immediately (newline already in DOM)
+                if (enterKeyPressed) {
+                    enterKeyPressed = false;
+                    clearTimeout(idleCheckTimeout);
+                    setTimeout(() => {
+                        triggerSpellCheckWithCursor();
+                    }, 100); // Slightly longer delay to ensure DOM is stable
+                    return;
+                }
+                
+                // Schedule spell check after idle period
+                clearTimeout(idleCheckTimeout);
+                idleCheckTimeout = setTimeout(() => {
+                    triggerSpellCheckWithCursor();
+                }, CONFIG.SPELL_CHECK_IDLE_DELAY);
+            });
+            
+            // Handle paste - save state BEFORE paste (so we can undo back to pre-paste state)
+            textArea.addEventListener('paste', (e) => {
+                // Save current state before paste happens (always, even if it's the same as last)
+                if (!isUndoRedoAction) saveState(true); // Force save to capture pre-paste state
+                // Also save after paste completes to capture the new state
+                setTimeout(() => {
+                    if (!isUndoRedoAction) saveState();
+                    lastTextContent = '';
+                }, 0);
+            });
+            
+            // Handle cut - save state before cut (so we can undo back to pre-cut state)
+            textArea.addEventListener('cut', () => {
+                if (!isUndoRedoAction) saveState();
+                setTimeout(() => {
+                    lastTextContent = '';
+                }, 0);
+            });
+            
+            // Spell check when user clicks away (leaves the text area)
+            textArea.addEventListener('blur', () => {
+                if (!isLanguageSwitching) {
+                    scheduleSpellCheck(0);
+                    
+                    // Restore cursor if we have a saved position
+                    if (savedCursorPosition !== null) {
+                        setTimeout(() => {
+                            textArea.focus();
+                            restoreCursorPosition(savedCursorPosition);
+                            savedCursorPosition = null;
+                        }, 10);
+                    }
+                }
+            });
+            
+            textArea.addEventListener('keydown', (e) => {
+                // Handle large deletions (Ctrl+Delete, Ctrl+Backspace, Ctrl+A + Delete)
+                if ((e.key === 'Delete' || e.key === 'Backspace') && (e.ctrlKey || e.metaKey)) {
+                    // Save state before deletion
+                    if (!isUndoRedoAction) saveState();
+                }
+                
+                // Handle Ctrl+A (select all) - will be followed by delete/cut
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
+                    // Save state when selecting all (in case user deletes/cuts next)
+                    // This is a bit aggressive but ensures we capture the state
+                    if (!isUndoRedoAction) {
+                        // Use setTimeout to save after selection happens
+                        setTimeout(() => saveState(), 10);
+                    }
+                }
+                // Check on space
+                if (e.key === ' ') {
+                    clearTimeout(idleCheckTimeout); // Cancel idle timer since we're checking now
+                    setTimeout(() => {
+                        triggerSpellCheckWithCursor();
+                    }, 50);
+                }
+                
+                // Mark Enter for checking in input event (after newline is created)
+                if (e.key === 'Enter') {
+                    enterKeyPressed = true;
+                }
+                
+                // Manual trigger: Press Escape to spell check without leaving field
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    clearTimeout(idleCheckTimeout); // Cancel idle timer
+                    lastTextContent = ''; // Force re-check
+                    triggerSpellCheckWithCursor();
+                    return;
+                }
+                
+                if (menu.classList.contains('show')) {
+                    const items = menu.querySelectorAll('.suggestion-item');
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        selectedSuggestionIndex = e.key === 'ArrowDown' 
+                            ? (selectedSuggestionIndex + 1) % items.length
+                            : (selectedSuggestionIndex <= 0 ? items.length - 1 : selectedSuggestionIndex - 1);
+                        items.forEach((item, i) => item.classList.toggle('highlighted', i === selectedSuggestionIndex));
+                        items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                        e.preventDefault();
+                        items[selectedSuggestionIndex].click();
+                    } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                        hideSuggestions();
+                    }
+                    return;
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+                else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+            });
+            langRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (!this.checked) return;
+                    
+                    suggestionCache.clear();
+                    // Cancel any ongoing pre-caching
+                    if (preCacheTimeout) {
+                        clearTimeout(preCacheTimeout);
+                        preCacheTimeout = null;
+                    }
+                    isPreCaching = false;
+                    languageMode = this.value;
+                    lastTextContent = ''; // Force re-check with new language
+                    
+                    const requiredDicts = getRequiredDictionaries();
+                    
+                    if (requiredDicts.some(locale => !dictionaries.has(locale))) {
+                        loadingDiv.classList.add('active');
+                    }
+                    
+                    loadDictionaries().then(() => {
+                        loadingDiv.classList.remove('active');
+                        const wasFocused = textArea === document.activeElement;
+                        isLanguageSwitching = true; // Prevent blur handler from interfering
+                        if (wasFocused) {
+                            // If focused, blur and wait for spell check before restoring focus
+                            savedCursorPosition = saveCursorPosition();
+                            textArea.blur();
+                            // Schedule spell check with a small delay to ensure blur completed
+                            setTimeout(() => {
+                                performSpellCheck();
+                                // Restore focus after spell check completes
+                                setTimeout(() => {
+                                    if (savedCursorPosition !== null) {
+                                        textArea.focus();
+                                        restoreCursorPosition(savedCursorPosition);
+                                        savedCursorPosition = null;
+                                    }
+                                    isLanguageSwitching = false;
+                                }, 10);
+                            }, 20);
+                        } else {
+                            // Not focused, can check directly
+                            performSpellCheck();
+                            isLanguageSwitching = false;
+                        }
+                    });
+                });
+            });
+            // ====== SUGGESTION MENU LOGIC ======
+            let menuHideTimer = null;
+            const cancelMenuHide = () => clearTimeout(menuHideTimer);
+            const scheduleMenuHide = () => {
+                cancelMenuHide();
+                menuHideTimer = setTimeout(() => {
+                    if (!menu.matches(':hover') && !document.querySelector('.spell-error:hover') && !document.querySelector('.spell-ignored:hover')) hideSuggestions();
+                }, CONFIG.SUGGESTION_HIDE_DELAY);
+            };
+            
+            // Show suggestions on hover over misspelled or ignored word
+            textArea.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('spell-error') || e.target.classList.contains('spell-ignored')) {
+                    cancelMenuHide();
+                    setTimeout(() => {
+                        const word = e.target.getAttribute('data-word');
+                        if (word) showSuggestions(word, e.target, e.target.classList.contains('spell-ignored'));
+                    }, CONFIG.SUGGESTION_HOVER_DELAY);
+                }
+            });
+            
+            // Hide when leaving word (if not moving to menu)
+            textArea.addEventListener('mouseout', (e) => {
+                if (e.target.classList.contains('spell-error') || e.target.classList.contains('spell-ignored')) {
+                    scheduleMenuHide();
+                }
+            });
+            
+            // Keep menu visible when hovering over it
+            menu.addEventListener('mouseenter', cancelMenuHide);
+            menu.addEventListener('mouseleave', scheduleMenuHide);
+            
+            // Hide immediately when clicking outside
+            document.addEventListener('click', (e) => {
+                if (menu.classList.contains('show') && !menu.contains(e.target) && !e.target.classList.contains('spell-error') && !e.target.classList.contains('spell-ignored')) {
+                    cancelMenuHide();
+                    hideSuggestions();
+                }
+            });
+            
+            // Right-click context menu for managing ignored words
+            textArea.addEventListener('contextmenu', (e) => {
+                const target = e.target;
+                
+                // Check if clicking on a spell-error or spell-ignored span
+                if (target.classList.contains('spell-error') || target.classList.contains('spell-ignored')) {
+                    e.preventDefault();
+                    const word = target.getAttribute('data-word');
+                    if (!word) return;
+                    
+                    const cleaned = cleanWord(word);
+                    const isIgnored = ignoredWords.has(cleaned);
+                    
+                    // Show menu with ignore/remove option
+                    menu.innerHTML = `<div class="suggestion-item" data-action="ignore">${isIgnored ? 'Remove from ignore list' : 'Ignore word'}</div>`;
+                    menu.style.top = e.pageY + 'px';
+                    menu.style.left = e.pageX + 'px';
+                    menu.classList.add('show');
+                    
+                    menu.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            toggleIgnoreList(word, !isIgnored);
+                            hideSuggestions();
+                        });
+                    });
+                    
+                    // Hide on click outside
+                    setTimeout(() => {
+                        const hideOnClick = (clickE) => {
+                            if (!menu.contains(clickE.target)) {
+                                hideSuggestions();
+                                document.removeEventListener('click', hideOnClick);
+                            }
+                        };
+                        document.addEventListener('click', hideOnClick);
+                    }, 0);
+                }
+            });
+            ['contenteditable', 'spellcheck', 'autocomplete', 'autocorrect', 'autocapitalize'].forEach(attr => textArea.setAttribute(attr, attr === 'contenteditable' ? 'true' : 'false'));
+            textArea.textContent = 'Type here to check spelling...';
+            textArea.addEventListener('focus', function() {
+                if (this.textContent === 'Type here to check spelling...') {
+                    this.textContent = '';
+                    undoStack = [];
+                    redoStack = [];
+                    // Save the empty state as the first undo point
+                    undoStack.push('');
+                }
+            });
+            // Initialize with empty state
+            undoStack.push('');
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    </script>
+</body>
+</html>

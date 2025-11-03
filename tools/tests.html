@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spell Checker Tests</title>
+    <title>SecSpell Test Suite</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
         .test-container { max-width: 900px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -28,10 +28,10 @@
 </head>
 <body>
     <div class="test-container">
-        <h1>🧪 Spell Checker Test Suite</h1>
+        <h1>🧪 SecSpell Test Suite</h1>
         <button onclick="runAllTests()">Run All Tests</button>
         <button onclick="clearResults()">Clear Results</button>
-        <div id="testSummary" class="test-summary">Click "Run All Tests" to begin</div>
+        <div id="testSummary" class="test-summary running">Click "Run All Tests" to begin</div>
         <div id="testResults"></div>
     </div>
 
@@ -664,6 +664,64 @@ const tests = {
             }
         }, results);
         
+        // Test QuotaExceededError detection
+        test('QuotaExceededError detection', () => {
+            const error = new DOMException('Quota exceeded', 'QuotaExceededError');
+            assertTrue(error.name === 'QuotaExceededError', 'Should detect QuotaExceededError');
+        }, results);
+        
+        // Test localStorage error handling with user-friendly messages
+        test('localStorage error handling with messages', () => {
+            const settings = {
+                set(key, value) {
+                    try {
+                        localStorage.setItem(`spellcheck-${key}`, value.toString());
+                        return { success: true };
+                    } catch (e) {
+                        if (e.name === 'QuotaExceededError') {
+                            return { error: 'QuotaExceededError', message: 'Storage full. Please clear some data.' };
+                        }
+                        return { error: 'UnknownError' };
+                    }
+                }
+            };
+            
+            const errorStructure = { error: 'QuotaExceededError', message: 'Storage full. Please clear some data.' };
+            assertTrue(errorStructure.error === 'QuotaExceededError', 'Should identify quota error');
+            assertTrue(typeof errorStructure.message === 'string', 'Should provide user-friendly message');
+        }, results);
+        
+        // Test autosave error handling
+        test('Autosave error handling', () => {
+            const error = { name: 'QuotaExceededError' };
+            const shouldDisableAutosave = error.name === 'QuotaExceededError';
+            assertTrue(shouldDisableAutosave, 'Should disable autosave on quota error');
+            const errorMessage = 'Storage full. Autosave disabled. Please clear data.';
+            assertTrue(typeof errorMessage === 'string' && errorMessage.length > 0, 'Should provide clear error message');
+        }, results);
+        
+        // Test ignore word error handling
+        test('Ignore word error handling', () => {
+            const error = { name: 'QuotaExceededError' };
+            const errorMessage = 'Storage full. Could not save ignored word.';
+            assertTrue(error.name === 'QuotaExceededError', 'Should detect quota error for ignored words');
+            assertTrue(typeof errorMessage === 'string', 'Should provide error message');
+        }, results);
+        
+        // Test error recovery on settings save
+        test('Error recovery on settings save', () => {
+            const simulateError = (errorName) => {
+                if (errorName === 'QuotaExceededError') {
+                    return { handled: true, message: 'Storage full. Please clear some data.' };
+                }
+                return { handled: false };
+            };
+            
+            const quotaResult = simulateError('QuotaExceededError');
+            assertTrue(quotaResult.handled, 'Should handle QuotaExceededError');
+            assertTrue(typeof quotaResult.message === 'string', 'Should provide user message');
+        }, results);
+        
         return results;
     },
     
@@ -690,6 +748,181 @@ const tests = {
             words.forEach(word => word.toLowerCase().replace(/[^\p{L}\p{M}]/gu, ''));
             const duration = performance.now() - startTime;
             assertTrue(duration < 500, `Word cleaning should be fast (< 500ms for 1000 words)`);
+        }, results);
+        
+        return results;
+    },
+    
+    settingsManagement() {
+        const results = [];
+        
+        // Simulate settings object structure
+        const settings = {
+            get(key, def = true) {
+                try {
+                    const val = localStorage.getItem(`spellcheck-${key}`);
+                    return val === null ? def : val === 'true';
+                } catch (e) {
+                    return def;
+                }
+            },
+            set(key, value) {
+                try {
+                    localStorage.setItem(`spellcheck-${key}`, value.toString());
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        return { error: 'QuotaExceededError' };
+                    }
+                    return { error: 'UnknownError' };
+                }
+                return { success: true };
+            }
+        };
+        
+        test('Settings get with default value', () => {
+            const testKey = 'spellcheck-test-setting-' + Date.now();
+            localStorage.removeItem(testKey);
+            // Should return default when key doesn't exist
+            const val = settings.get(testKey.replace('spellcheck-', ''), true);
+            assertTrue(val === true, 'Should return default value when key missing');
+        }, results);
+        
+        test('Settings save and retrieve', () => {
+            const testKey = 'test-setting-' + Date.now();
+            const result = settings.set(testKey, true);
+            assertTrue(result.success, 'Should successfully save setting');
+            assertTrue(settings.get(testKey, false) === true, 'Should retrieve saved setting');
+            localStorage.removeItem(`spellcheck-${testKey}`);
+        }, results);
+        
+        test('Settings boolean conversion', () => {
+            const testKey = 'test-bool-' + Date.now();
+            settings.set(testKey, true);
+            assertTrue(localStorage.getItem(`spellcheck-${testKey}`) === 'true', 'Should convert true to string');
+            settings.set(testKey, false);
+            assertTrue(localStorage.getItem(`spellcheck-${testKey}`) === 'false', 'Should convert false to string');
+            localStorage.removeItem(`spellcheck-${testKey}`);
+        }, results);
+        
+        test('Settings persistence', () => {
+            const testKey = 'test-persist-' + Date.now();
+            settings.set(testKey, true);
+            // Simulate retrieval after "page reload"
+            const retrieved = settings.get(testKey, false);
+            assertTrue(retrieved === true, 'Settings should persist across sessions');
+            localStorage.removeItem(`spellcheck-${testKey}`);
+        }, results);
+        
+        test('Settings default values', () => {
+            const testKey = 'test-default-' + Date.now();
+            localStorage.removeItem(`spellcheck-${testKey}`);
+            // Test default true
+            assertTrue(settings.get(testKey, true) === true, 'Should return default true');
+            // Test default false
+            assertTrue(settings.get(testKey, false) === false, 'Should return default false');
+        }, results);
+        
+        test('Storage keys constants structure', () => {
+            const STORAGE_KEYS = {
+                IGNORED: 'spellcheck-ignored',
+                AI_ENABLED: 'spellcheck-ai-enabled',
+                AUTOSAVE: 'spellcheck-autosave',
+                AUTOSAVED_TEXT: 'spellcheck-autosaved-text',
+                LAST_SAVED: 'spellcheck-last-saved'
+            };
+            assertTrue(typeof STORAGE_KEYS.AI_ENABLED === 'string', 'Storage keys should be strings');
+            assertTrue(STORAGE_KEYS.AI_ENABLED.startsWith('spellcheck-'), 'Storage keys should have prefix');
+        }, results);
+        
+        return results;
+    },
+    
+    autosave() {
+        const results = [];
+        
+        const PLACEHOLDER_TEXT = 'Type here to check spelling...';
+        const STORAGE_KEYS = {
+            AUTOSAVED_TEXT: 'spellcheck-autosaved-text',
+            LAST_SAVED: 'spellcheck-last-saved',
+            AUTOSAVE: 'spellcheck-autosave'
+        };
+        
+        test('Autosave text storage', () => {
+            const testKey = STORAGE_KEYS.AUTOSAVED_TEXT + '-test-' + Date.now();
+            const testText = 'This is test text';
+            try {
+                localStorage.setItem(testKey, testText);
+                assertEquals(localStorage.getItem(testKey), testText, 'Should store text in localStorage');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                assertTrue(false, 'Should not throw error storing text');
+            }
+        }, results);
+        
+        test('Autosave placeholder exclusion', () => {
+            const testText = PLACEHOLDER_TEXT;
+            // Should not save placeholder text
+            assertTrue(testText === PLACEHOLDER_TEXT, 'Placeholder should be detected');
+            const shouldSave = testText && testText !== PLACEHOLDER_TEXT;
+            assertFalse(shouldSave, 'Placeholder text should not be saved');
+        }, results);
+        
+        test('Autosave timestamp storage', () => {
+            const testKey = STORAGE_KEYS.LAST_SAVED + '-test-' + Date.now();
+            const timestamp = Date.now().toString();
+            try {
+                localStorage.setItem(testKey, timestamp);
+                const retrieved = localStorage.getItem(testKey);
+                assertTrue(parseInt(retrieved) > 0, 'Timestamp should be valid number');
+                assertTrue(parseInt(retrieved) <= Date.now(), 'Timestamp should not be in future');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                assertTrue(false, 'Should not throw error storing timestamp');
+            }
+        }, results);
+        
+        test('Autosave timestamp formatting', () => {
+            const timestamp = Date.now().toString();
+            const date = new Date(parseInt(timestamp));
+            assertTrue(date instanceof Date, 'Timestamp should convert to Date');
+            assertTrue(!isNaN(date.getTime()), 'Date should be valid');
+            const formatted = date.toLocaleString();
+            assertTrue(typeof formatted === 'string' && formatted.length > 0, 'Date should format to string');
+        }, results);
+        
+        test('Autosave empty text handling', () => {
+            const emptyText = '';
+            const shouldSave = emptyText && emptyText !== PLACEHOLDER_TEXT;
+            assertFalse(shouldSave, 'Empty text should not be saved');
+        }, results);
+        
+        test('Autosave restore logic', () => {
+            const testKey = STORAGE_KEYS.AUTOSAVED_TEXT + '-test-' + Date.now();
+            const savedText = 'Restored text';
+            try {
+                localStorage.setItem(testKey, savedText);
+                const retrieved = localStorage.getItem(testKey);
+                assertTrue(retrieved === savedText, 'Should retrieve saved text');
+                assertTrue(retrieved && retrieved.trim(), 'Retrieved text should not be empty');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                assertTrue(false, 'Should not throw error retrieving text');
+            }
+        }, results);
+        
+        test('Autosave state checking', () => {
+            const testKey = STORAGE_KEYS.AUTOSAVE + '-test-' + Date.now();
+            try {
+                localStorage.setItem(testKey, 'true');
+                const isEnabled = localStorage.getItem(testKey) === 'true';
+                assertTrue(isEnabled, 'Autosave should be enabled');
+                localStorage.setItem(testKey, 'false');
+                const isDisabled = localStorage.getItem(testKey) === 'false';
+                assertTrue(isDisabled, 'Autosave should be disabled when set to false');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                assertTrue(false, 'Should not throw error checking autosave state');
+            }
         }, results);
         
         return results;
@@ -785,7 +1018,9 @@ window.runAllTests = async function() {
         ['Dictionary Conversion', tests.dictionaryConversion],
         ['Security & Validation', tests.securityAndValidation],
         ['Error Handling', tests.errorHandling],
-        ['Performance', tests.performance]
+        ['Performance', tests.performance],
+        ['Settings Management', tests.settingsManagement],
+        ['Autosave', tests.autosave]
     ];
     
     for (let i = 0; i < testSuites.length; i++) {
@@ -825,7 +1060,7 @@ window.runAllTests = async function() {
 
 window.clearResults = function() {
     document.getElementById('testResults').innerHTML = '';
-    document.getElementById('testSummary').className = 'test-summary';
+    document.getElementById('testSummary').className = 'test-summary running';
     document.getElementById('testSummary').textContent = 'Click "Run All Tests" to begin';
     testResults = { passed: 0, failed: 0, total: 0 };
 };

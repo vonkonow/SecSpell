@@ -1,4 +1,4 @@
-# Spell Checker
+# SecSpell
 
 A fast, offline spell checker that works entirely in your browser - no server or internet connection required. Perfect for checking brief text without uploading sensitive data to cloud services (AI link is optional :)
 
@@ -7,7 +7,9 @@ A fast, offline spell checker that works entirely in your browser - no server or
 - ✅ **100% Offline** - Works without internet or server
 - ✅ **Multi-Language Support** - Auto-detects available dictionaries
 - ✅ **All Languages Mode** - Check against all loaded dictionaries simultaneously
-- ✅ **AI Chat Integration** - Copy text and open DuckDuckGo AI Chat
+- ✅ **AI Chat Integration** - Copy text and open DuckDuckGo AI Chat (optional, can be disabled)
+- ✅ **Settings Panel** - Configure AI button visibility, autosave, and access tools
+- ✅ **Autosave & Restore** - Automatically saves and restores your text
 - ✅ **Dynamic Language Addition** - Easily add new languages via dictionary converter
 - ✅ **Suggestions** - Hover over misspelled words for corrections
 - ✅ **Keyboard Navigation** - Arrow keys + Enter to navigate suggestions
@@ -21,9 +23,14 @@ A fast, offline spell checker that works entirely in your browser - no server or
 2. Select language mode: "All" or specific language
 3. Type - misspelled words are highlighted in red
 4. Hover over words for suggestions, click to replace
-5. Click "Ignore word" to add to personal dictionary
-6. Use "Copy & Open AI Chat" button to send text to DuckDuckGo AI
-7. Click "Language:" label to open dictionary converter
+5. Click ⚙️ settings icon to configure AI button, autosave, or access tools
+6. Use 🤖 "Copy & Open AI Chat" button to send text to DuckDuckGo AI (if enabled)
+
+**Settings (⚙️ icon):**
+- **Show AI Chat button** - Toggle AI button visibility (default: enabled)
+- **Autosave text** - Automatically save/restore text (default: enabled)
+- **Dictionary Converter** - Convert and add new language dictionaries
+- **Test Suite** - Run comprehensive tests
 
 ## Files
 
@@ -43,16 +50,12 @@ The application automatically detects available dictionaries by scanning for `wi
 
 ## Adding New Languages
 
-1. Click "Language:" label to open converter
+1. Open settings (⚙️ icon) and click "Dictionary Converter" link, or open `tools/converter.html` directly
 2. Download .aff and .dic files from [wooorm/dictionaries](https://github.com/wooorm/dictionaries)
 3. Drag & drop files into converter, enter locale (e.g., `de_DE`)
 4. Click "Convert All" and download the JavaScript file
 5. Add script tag to `index.html`: `<script src="tools/dictionaries-de_DE.js"></script>`
 6. Language automatically appears in selector
-
-## Testing
-
-Open `tools/tests.html` in your browser for comprehensive test coverage including dictionary loading, spell checking, suggestions, security, and performance.
 
 ## Performance
 
@@ -63,22 +66,25 @@ Open `tools/tests.html` in your browser for comprehensive test coverage includin
 
 ## Privacy & Security
 
-**100% private** - text never leaves your device:
-- No network requests or cloud services
+**100% private by default** - text never leaves your device:
+- No network requests or cloud services (unless AI Chat button is used)
+- Works completely offline with no tracking or analytics
 - Browser spell check disabled to prevent data leaks
-- Works completely offline
-- No tracking or analytics
 - XSS protection via HTML escaping
+
+**Important:**
+- ⚠️ **AI Chat** - Sends text to external servers (DuckDuckGo). Can be disabled in settings.
+- ⚠️ **Autosave** - Stores text unencrypted in localStorage. Not recommended for sensitive information.
 
 ## Keyboard Shortcuts
 
-- **Escape** - Force spell check or close suggestions menu
-- **Arrow Up/Down** - Navigate suggestions (when open)
+- **Escape** - Force spell check, close suggestions/settings
+- **Arrow Up/Down** - Navigate suggestions
 - **Enter** - Select highlighted suggestion
 - **Ctrl+Z/Y** - Undo/Redo
 - **Space/Enter** - Instant spell check after word/line
 
-Spell checking happens automatically after 2s idle, on Space/Enter, or manually with Escape. Cursor position is always preserved.
+Spell checking happens automatically after 2s idle, on Space/Enter, or manually with Escape.
 
 ## License
 
